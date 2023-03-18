@@ -34,13 +34,46 @@ duration = 100
 steps = 10
 
 
-! Start the for loop.
-number_of_data = 1
-*DO, i, 1, number_of_data, 1
-
 ! Define a table of simulation parameters.
+number_of_data = 30
 *DIM, parameters, ARRAY, 2, number_of_data
-parameters(1,1) = 5, 0.2
+parameters(1,1) = 5.0,0.2
+parameters(1,2) = 5.0,0.4
+parameters(1,3) = 5.0,0.6
+parameters(1,4) = 5.0,0.8
+parameters(1,5) = 5.0,1.0
+parameters(1,6) = 6.0,0.2
+parameters(1,7) = 6.0,0.4
+parameters(1,8) = 6.0,0.6
+parameters(1,9) = 6.0,0.8
+parameters(1,10) = 6.0,1.0
+parameters(1,11) = 7.0,0.2
+parameters(1,12) = 7.0,0.4
+parameters(1,13) = 7.0,0.6
+parameters(1,14) = 7.0,0.8
+parameters(1,15) = 7.0,1.0
+parameters(1,16) = 8.0,0.2
+parameters(1,17) = 8.0,0.4
+parameters(1,18) = 8.0,0.6
+parameters(1,19) = 8.0,0.8
+parameters(1,20) = 8.0,1.0
+parameters(1,21) = 9.0,0.2
+parameters(1,22) = 9.0,0.4
+parameters(1,23) = 9.0,0.6
+parameters(1,24) = 9.0,0.8
+parameters(1,25) = 9.0,1.0
+parameters(1,26) = 10.0,0.2
+parameters(1,27) = 10.0,0.4
+parameters(1,28) = 10.0,0.6
+parameters(1,29) = 10.0,0.8
+parameters(1,30) = 10.0,1.0
+
+! Save parameters defined in this script so that they can be accessed after calling /CLEAR.
+PARSAV, ALL
+
+
+! Start the for loop.
+*DO, i, 1, number_of_data, 1
 
 height = parameters(1, i, 1)
 taper_ratio = parameters(2, i, 1)
@@ -154,8 +187,14 @@ FINISH
     *VGET, location_x, NODE, , LOC, X
     *VGET, location_y, NODE, , LOC, Y
 
+    ! Create the file name.
+    height_string = CHRVAL(height)
+    height_string = STRFILL('00', height_string, 3-STRLENG(height_string))
+    taper_ratio_string = CHRVAL(taper_ratio)
+    t_string = CHRVAL(t)
+    t_string = STRFILL('00', t_string, 3-STRLENG(t_string))
+    filename = 'fin_%height_string%_%taper_ratio_string%_%t_string%'
     ! Save the results to a file.
-    filename = 'fin_%CHRVAL(height)%_%CHRVAL(taper_ratio)%_t=%CHRVAL(t)%'
     *CFOPEN, filename, 'txt'
     *VWRITE, temperature(1), location_x(1), location_y(1)
     (E9.4, ',', F7.4, ',', F7.4)
@@ -163,5 +202,7 @@ FINISH
 *ENDDO
 
 /CLEAR
+# Restore parameters previously saved after calling /CLEAR.
+PARRES
 
 *ENDDO
