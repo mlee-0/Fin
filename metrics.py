@@ -23,20 +23,31 @@ def plot_parity(prediction: np.ndarray, true: np.ndarray) -> None:
     plt.show()
 
 def plot_comparison(prediction: np.ndarray, true: np.ndarray) -> None:
-    """Plot each 2D channel of predicted and true responses."""
+    """Plot each 2D channel of predicted and true responses, both given as 3D arrays."""
 
-    channels = true.shape[1]
+    channels = true.shape[0]
 
     plt.figure()
-    for i in range(0, channels, 2):
-        plt.subplot(channels, 2, i+1)
-        plt.imshow(prediction, cmap='Spectral_r')
-        plt.ylabel(f'Channel {i+1}')
+    for i in range(channels):
+        plt.subplot(channels, 2, i*2+1)
+        plt.imshow(prediction[i, ...], cmap='Spectral_r')
+        plt.xticks([])
+        plt.yticks([])
         if i == 0:
             plt.title('Prediction')
 
-        plt.subplot(channels, 2, i+2)
-        plt.imshow(true, cmap='Spectral_r')
-        plt.ylabel(f'Channel {i+1}')
+        plt.subplot(channels, 2, i*2+2)
+        plt.imshow(true[i, ...], cmap='Spectral_r')
+        plt.xticks([])
+        plt.yticks([])
         if i == 0:
             plt.title('True')
+    plt.show()
+
+
+if __name__ == '__main__':
+    from preprocessing import load_pickle
+    outputs = load_pickle('Temperature/outputs.pickle').numpy()
+    print(outputs.shape)
+    i = 300-1
+    plot_comparison(outputs[i], outputs[i])
