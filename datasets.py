@@ -22,6 +22,20 @@ def print_simulation_parameters() -> None:
     for i, (height, taper_ratio) in enumerate(parameters, 1):
         print(f"parameters(1,{i}) = {height},{taper_ratio:.1f}")
 
+def print_dataset_summary(inputs: torch.Tensor, outputs: torch.Tensor) -> None:
+    """Print information about the given input and output data."""
+
+    print(f"Input data:")
+    print(f"\tShape: {inputs.size()}")
+    print(f"\tMemory: {inputs.storage().nbytes()/1e6:,.2f} MB")
+    print(f"\tMin, max: {inputs.min()}, {inputs.max()}")
+
+    print(f"Label data:")
+    print(f"\tShape: {outputs.size()}")
+    print(f"\tMemory: {outputs.storage().nbytes()/1e6:,.2f} MB")
+    print(f"\tMin, max: {outputs.min()}, {outputs.max()}")
+    print(f"\tMean: {outputs.mean()}")
+
 
 class TemperatureDataset(Dataset):
     def __init__(self) -> None:
@@ -32,6 +46,8 @@ class TemperatureDataset(Dataset):
         self.inputs = make_inputs(parameters).float()
         self.outputs = load_pickle('Temperature/outputs.pickle').float()
 
+        print_dataset_summary(self.inputs, self.outputs)
+
     def __len__(self) -> int:
         return self.inputs.size(0)
 
@@ -40,4 +56,4 @@ class TemperatureDataset(Dataset):
 
 
 if __name__ == '__main__':
-    print_simulation_parameters()
+    dataset = TemperatureDataset()

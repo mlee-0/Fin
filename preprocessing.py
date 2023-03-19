@@ -5,29 +5,44 @@ import glob
 import pickle
 from typing import *
 
+import matplotlib.pyplot as plt
 import numpy as np
+from PIL import Image, ImageDraw
 import torch
 
 
 def make_inputs(parameters: List[tuple]) -> torch.Tensor:
     """Return a 4D (data, channels, height, width) tensor for a list of parameters."""
 
+    # Scale factor to apply to the tensor to allow for enough resolution to properly visualize all taper ratios.
+    scale = 4
+
     n = len(parameters)
     channels = 1
-    height, width = 20, 40
+    height, width = 10*scale, 20*scale
 
     array = np.zeros([n, channels, height, width])
-    x, y = np.meshgrid(np.arange(height), np.arange(width))
+    for i, (height_, taper_ratio) in enumerate(parameters):
+        height_ *= scale
+        height_end = round(taper_ratio * height_)
+        points = [
+            (0, 0),
+            (width - 1, (height_ - height_end)/2),
+            (width - 1, (height_ - height_end)/2 + height_end - 1),
+            (0, height_ - 1),
+        ]
 
-    for height, taper_ratio in parameters:
-        pass
+        image = Image.new('1', (width, height))
+        draw = ImageDraw.Draw(image)
+        draw.polygon(points, fill=1, outline=1)
+        array[i, 0, ...] = np.asarray(image, dtype=float)
 
     array = torch.tensor(array, dtype=torch.float32)
 
     return array
 
 def read_output(filename: str) -> np.ndarray:
-    """Read the data in the given filename."""
+    """Read the data in the given filename and convert to a 2D array."""
 
     with open(filename, 'r') as f:
         lines = f.readlines()
@@ -67,7 +82,8 @@ if __name__ == '__main__':
     files = glob.glob('Temperature/*.txt')
     files.sort()
     # List of file names corresponding to each simulation, excluding the time step.
-    basenames = ['_'.join(file.split('_')[:-1]) for file in files]
+    basenames = {'_'.join(file.split('_')[:-1]) for file in files}
+    basenames = sorted(basenames)
     
     outputs = []
     for basename in basenames:

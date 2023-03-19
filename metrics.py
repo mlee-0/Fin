@@ -12,12 +12,12 @@ def mse(prediction: np.ndarray, true: np.ndarray) -> float:
     return np.mean((prediction - true) ** 2)
 
 def mre(prediction: np.ndarray, true: np.ndarray) -> float:
-    return np.mean((prediction - true) / true) * 100
+    return np.mean(np.abs(prediction - true) / true) * 100
 
 def plot_parity(prediction: np.ndarray, true: np.ndarray) -> None:
     plt.figure()
     plt.plot(true.flatten(), prediction.flatten(), '.', linewidth=1)
-    plt.plot([min(true), max(true)], [min(true), max(true)], 'k--')
+    plt.plot([true.min(), true.max()], [true.min(), true.max()], 'k--')
     plt.xlabel('True')
     plt.xlabel('Prediction')
     plt.show()
@@ -28,20 +28,26 @@ def plot_comparison(prediction: np.ndarray, true: np.ndarray) -> None:
     channels = true.shape[0]
 
     plt.figure()
+    min_value, max_value = true.min(), true.max()
+
     for i in range(channels):
+
         plt.subplot(channels, 2, i*2+1)
-        plt.imshow(prediction[i, ...], cmap='Spectral_r')
+        axis = plt.imshow(prediction[i, ...], cmap='Spectral_r', vmin=min_value, vmax=max_value)
         plt.xticks([])
         plt.yticks([])
         if i == 0:
             plt.title('Prediction')
+            plt.colorbar(axis, ticks=[min_value, max_value])
 
         plt.subplot(channels, 2, i*2+2)
-        plt.imshow(true[i, ...], cmap='Spectral_r')
+        axis = plt.imshow(true[i, ...], cmap='Spectral_r', vmin=min_value, vmax=max_value)
         plt.xticks([])
         plt.yticks([])
         if i == 0:
             plt.title('True')
+            plt.colorbar(axis, ticks=[min_value, max_value])
+
     plt.show()
 
 
