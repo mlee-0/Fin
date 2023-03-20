@@ -15,7 +15,7 @@ KEYW,pr_sgui,1
 
 
 ! Geometric constants.
-thickness = 20
+height = 20
 thickness_z = 1
 
 ! Mesh settings.
@@ -680,8 +680,8 @@ KEYW,PR_MULTI,0
 ! Create the four points of the geometry.
 spacing = thickness*(1-taper_ratio)/2
 K, 1, 0, 0, 0
-K, 2, thickness, 0 + spacing, 0
-K, 3, thickness, thickness - spacing, 0
+K, 2, height, 0 + spacing, 0
+K, 3, height, thickness - spacing, 0
 K, 4, 0, thickness, 0
 ! Create the four lines that form the boundary of the geometry.
 L, 1, 2
