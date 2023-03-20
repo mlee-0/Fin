@@ -312,7 +312,7 @@ if __name__ == '__main__':
 
         model = ResNet(),
         filename_model = 'temperature.pth',
-        dataset = TemperatureDataset(),
+        dataset = FinDataset('temperature'),
         loss_function = MSELoss(),
         Optimizer = torch.optim.Adam,
         scheduler = None,

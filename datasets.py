@@ -39,14 +39,23 @@ def print_dataset_summary(inputs: torch.Tensor, outputs: torch.Tensor) -> None:
     print(f"\tMean: {outputs.mean()}")
 
 
-class TemperatureDataset(Dataset):
-    def __init__(self) -> None:
+class FinDataset(Dataset):
+    """Dataset of a specific response obtained in FEA."""
+
+    def __init__(self, response: str) -> None:
         super().__init__()
 
         self.parameters = generate_simulation_parameters()
-
         self.inputs = make_inputs(self.parameters).float()
-        self.outputs = load_pickle('Temperature/outputs.pickle').float()
+
+        if response == 'temperature':
+            self.outputs = load_pickle('Thermal/outputs.pickle')[..., 0].float()
+        elif response == 'thermal gradient':
+            self.outputs = load_pickle('Thermal/outputs.pickle')[..., 1].float()
+        elif response == 'stress':
+            self.outputs = load_pickle('Structural/outputs.pickle')[..., 0].float()
+        else:
+            raise Exception(f"Invalid response: {response}.")
 
         print_dataset_summary(self.inputs, self.outputs)
 
@@ -55,6 +64,21 @@ class TemperatureDataset(Dataset):
 
     def __getitem__(self, index) -> Tuple[torch.Tensor, torch.Tensor, tuple]:
         return self.inputs[index], self.outputs[index], self.parameters[index]
+
+class AutoencoderDataset(Dataset):
+    """Dataset of input images for training an autoencoder."""
+
+    def __init__(self) -> None:
+        super().__init__()
+
+        self.parameters = generate_simulation_parameters()
+        self.inputs = make_inputs(self.parameters).float()
+    
+    def __len__(self) -> int:
+        return self.inputs.size(0)
+
+    def __getitem__(self, index) -> Tuple[torch.Tensor, torch.Tensor]:
+        return self.inputs[index], self.inputs[index]
 
 
 if __name__ == '__main__':

@@ -2,6 +2,7 @@
 
 
 import glob
+import os
 import pickle
 from typing import *
 
@@ -41,8 +42,8 @@ def make_inputs(parameters: List[tuple]) -> torch.Tensor:
 
     return array
 
-def read_output(filename: str) -> np.ndarray:
-    """Read the data in the given filename and convert to a 2D array."""
+def read_simulation(filename: str) -> np.ndarray:
+    """Convert the data in the given file into a 3D array, with shape (height, width, response), where the last axis contains different types of responses, such as temperature or stress. The last two values on each line in the file must be the X and Y coordinates of the node, respectively."""
 
     with open(filename, 'r') as f:
         lines = f.readlines()
@@ -50,14 +51,43 @@ def read_output(filename: str) -> np.ndarray:
     values = []
     for line in lines:
         values.append([float(_) for _ in line.split(',')])
-    values.sort(key=lambda _: (_[1], _[2]))
-    values = [value for value, x, y in values]
+    values.sort(key=lambda _: (_[-2], _[-1]))
+    values = [value[:-2] for value in values]
 
-    array = np.reshape(values, (32, 8))
-    array = array.transpose()
+    array = np.reshape(values, (32, 8, -1))
+    array = array.transpose([1, 0, 2])
     array = array[::-1, :]
 
     return array
+
+def read_simulations_transient(folder: str) -> np.ndarray:
+    """Convert all transient simulation data in the given folder into a 5D array, with shape (data, time steps, height, width, response).
+    
+    For transient simulations, there are multiple files corresponding to the same simulation, one for each time step. This function combines the files corresponding to each simulation.
+    """
+
+    files = glob.glob(os.path.join(folder, '*.txt'))
+    files.sort()
+    # List of file name prefixes that correspond to each simulation.
+    basenames = {'_'.join(file.split('_')[:-1]) for file in files}
+    basenames = sorted(basenames)
+
+    outputs = []
+    for basename in basenames:
+        outputs.append([read_simulation(file) for file in files if file.startswith(basename)])
+    
+    return np.array(outputs)
+
+def read_simulations_static(folder: str):
+    """Convert all static simulation data in the given folder into a 5D array, with shape (data, 1, height, width, response)."""
+
+    files = glob.glob(os.path.join(folder, '*.txt'))
+    files.sort()
+
+    outputs = [read_simulation(file)[None, ...] for file in files]
+    
+    return np.array(outputs)
+
 
 def save_pickle(data: Any, filename: str) -> None:
     """Save data as a .pickle file."""
@@ -79,17 +109,23 @@ def load_pickle(filename: str) -> Any:
 
 # Run this file to read simulation data and save as a .pickle file.
 if __name__ == '__main__':
-    files = glob.glob('Temperature/*.txt')
-    files.sort()
-    # List of file names corresponding to each simulation, excluding the time step.
-    basenames = {'_'.join(file.split('_')[:-1]) for file in files}
-    basenames = sorted(basenames)
-    
-    outputs = []
-    for basename in basenames:
-        outputs.append([read_output(file) for file in files if file.startswith(basename)])
-    
-    # Convert to a tensor.
-    outputs = np.array(outputs)
+    outputs = read_simulations_transient('Thermal')
     outputs = torch.tensor(outputs, dtype=torch.float32)
-    save_pickle(outputs, 'Temperature/outputs.pickle')
+    save_pickle(outputs, 'Thermal/outputs.pickle')
+
+    outputs = read_simulations_static('Structural')
+    outputs = torch.tensor(outputs, dtype=torch.float32)
+    save_pickle(outputs, 'Structural/outputs.pickle')
+
+    # from metrics import *
+    # outputs = read_simulations_transient('Thermal')
+    # print(outputs.shape)
+    # print(outputs[0].min(), outputs[1].min())
+    # plot_comparison(outputs[0, ..., 0], outputs[1, ..., 0])
+
+    # outputs = read_simulations_static('Structural')
+    # plot_comparison(outputs[300], outputs[308])
+
+    # plt.imshow(make_inputs([[6, 0.2]])[0, 0, ...], cmap='gray')
+    # plt.grid(which='both')
+    # plt.show()
