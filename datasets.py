@@ -12,9 +12,9 @@ def generate_simulation_parameters() -> List[Tuple[float, float]]:
 
     return [
         (height, taper_ratio, convection_coefficient)
-        for height in np.arange(5, 10, 1).round(0)
-        for taper_ratio in np.arange(0.1, 1, 0.1).round(1)
-        for convection_coefficient in np.arange(10, 100, 10).round(0)
+        for height in np.arange(5, 10+1, 1).round(0)
+        for taper_ratio in np.arange(0.1, 1+0.1, 0.1).round(1)
+        for convection_coefficient in np.arange(10, 100+1, 10).round(0)
     ]
 
 def print_simulation_parameters() -> None:
