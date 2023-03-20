@@ -7,20 +7,22 @@ from torch.utils.data import Dataset
 from preprocessing import *
 
 
-def get_simulation_parameters() -> List[Tuple[float, float]]:
+def generate_simulation_parameters() -> List[Tuple[float, float]]:
     """Return a list of tuples of simulation parameters for each simulation."""
 
-    heights = np.linspace(5, 10, 6)  # mm
-    taper_ratios = np.linspace(0.2, 1, 5)  # —
-
-    return [(height, taper_ratio) for height in heights for taper_ratio in taper_ratios]
+    return [
+        (height, taper_ratio, convection_coefficient)
+        for height in np.arange(5, 10, 1).round(0)
+        for taper_ratio in np.arange(0.1, 1, 0.1).round(1)
+        for convection_coefficient in np.arange(10, 100, 10).round(0)
+    ]
 
 def print_simulation_parameters() -> None:
     """Print lines that define the simulation parameters, to be copied to the Ansys script."""
 
-    parameters = get_simulation_parameters()
-    for i, (height, taper_ratio) in enumerate(parameters, 1):
-        print(f"parameters(1,{i}) = {height},{taper_ratio:.1f}")
+    parameters = generate_simulation_parameters()
+    for i, parameter in enumerate(parameters, 1):
+        print(f"parameters(1,{i}) = {str(parameter)[1:-1]}")
 
 def print_dataset_summary(inputs: torch.Tensor, outputs: torch.Tensor) -> None:
     """Print information about the given input and output data."""
@@ -41,9 +43,9 @@ class TemperatureDataset(Dataset):
     def __init__(self) -> None:
         super().__init__()
 
-        parameters = get_simulation_parameters()
+        self.parameters = generate_simulation_parameters()
 
-        self.inputs = make_inputs(parameters).float()
+        self.inputs = make_inputs(self.parameters).float()
         self.outputs = load_pickle('Temperature/outputs.pickle').float()
 
         print_dataset_summary(self.inputs, self.outputs)
@@ -56,4 +58,5 @@ class TemperatureDataset(Dataset):
 
 
 if __name__ == '__main__':
-    dataset = TemperatureDataset()
+    # dataset = TemperatureDataset()
+    print_simulation_parameters()
