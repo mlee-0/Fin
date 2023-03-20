@@ -22,7 +22,7 @@ def plot_parity(prediction: np.ndarray, true: np.ndarray) -> None:
     plt.xlabel('Prediction')
     plt.show()
 
-def plot_comparison(prediction: np.ndarray, true: np.ndarray) -> None:
+def plot_comparison(prediction: np.ndarray, true: np.ndarray, title: str=None) -> None:
     """Plot each 2D channel of predicted and true responses, both given as 3D arrays."""
 
     channels = true.shape[0]
@@ -47,6 +47,9 @@ def plot_comparison(prediction: np.ndarray, true: np.ndarray) -> None:
         if i == 0:
             plt.title('True')
             plt.colorbar(axis, ticks=[min_value, max_value])
+
+    if title:
+        plt.suptitle(title)
 
     plt.show()
 

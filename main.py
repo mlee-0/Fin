@@ -62,17 +62,13 @@ def train_model(
         # Train on the training dataset.
         model.train(True)
         loss = 0
-        for batch, (input_data, label_data) in enumerate(train_dataloader, 1):
+        for batch, (input_data, label_data, *_) in enumerate(train_dataloader, 1):
             # Predict an output from the model with the given input.
             output_data = model(input_data)
             # Calculate the loss.
             loss_current = loss_function(output_data, label_data)
             # Update the cumulative loss.
-            loss += loss_current.item()
-
-            if loss_current is torch.nan:
-                print(f"Stopping due to nan loss.")
-                break
+            loss += loss_current.item() * input_data.size(0)
             
             # Reset gradients of model parameters.
             optimizer.zero_grad()
@@ -82,12 +78,10 @@ def train_model(
             optimizer.step()
 
             if batch % 10 == 0:
-                print(f"Batch {batch}/{len(train_dataloader)}: {loss/batch:,.2e}...", end="\r")
+                print(f"Batch {batch}/{len(train_dataloader)}: {loss/batch:,.2e}...", end='\r')
 
-        print()
-        loss /= batch
+        loss /= len(train_dataloader.dataset)
         losses_training.append(loss)
-        print(f"Training loss: {loss:,.2e}")
 
         # Adjust the learning rate if a scheduler is used.
         if scheduler:
@@ -101,9 +95,9 @@ def train_model(
         outputs = []
         labels = []
         with torch.no_grad():
-            for batch, (input_data, label_data) in enumerate(validate_dataloader, 1):
+            for batch, (input_data, label_data, *_) in enumerate(validate_dataloader, 1):
                 output_data = model(input_data)
-                loss += loss_function(output_data, label_data.float()).item()
+                loss += loss_function(output_data, label_data.float()).item() * input_data.size(0)
 
                 output_data = output_data.cpu()
                 label_data = label_data.cpu()
@@ -112,12 +106,12 @@ def train_model(
                 labels.append(label_data)
 
                 if batch % 10 == 0:
-                    print(f"Batch {batch}/{len(validate_dataloader)}...", end="\r")
+                    print(f"Batch {batch}/{len(validate_dataloader)}...", end='\r')
  
-        print()
-        loss /= batch
+        loss /= len(validate_dataloader.dataset)
         losses_validation.append(loss)
-        print(f"Validation loss: {loss:,.2e}")
+
+        print(f"Loss: {losses_training[-1]:,.2e} (training), {losses_validation[-1]:,.2e} (validation)")
 
         # # Calculate evaluation metrics on validation results.
         # outputs = torch.cat(outputs, dim=0)
@@ -150,7 +144,7 @@ def train_model(
     plt.semilogy(range(1, len(losses_training)+1), losses_training, '-', label='Training')
     plt.semilogy(range(1, len(losses_validation)+1), losses_validation, '-', label='Validation')
     plt.xlabel('Epoch')
-    plt.ylabel(f'Loss {loss_function}')
+    plt.ylabel('Loss')
     plt.legend()
     plt.show()
 
@@ -168,7 +162,7 @@ def test_model(
     labels = []
 
     with torch.no_grad():
-        for batch, (input_data, label_data) in enumerate(test_dataloader, 1):
+        for batch, (input_data, label_data, *_) in enumerate(test_dataloader, 1):
             output_data = model(input_data)
             loss += loss_function(output_data, label_data.float()).item()
 
@@ -181,9 +175,8 @@ def test_model(
             outputs.append(output_data)
             
             if batch % 1 == 0:
-                print(f"Batch {batch}/{len(test_dataloader)}...", end="\r")
+                print(f"Batch {batch}/{len(test_dataloader)}...", end='\r')
 
-    print()
     loss /= batch
     print(f"Testing loss: {loss:,.2e}")
 
@@ -195,25 +188,23 @@ def test_model(
     return outputs, labels, inputs
 
 def evaluate_results(outputs: np.ndarray, labels: np.ndarray, queue=None, info_gui: dict=None):
-    """Calculate and return evaluation metrics."""
+    """Print and return evaluation metrics."""
 
     results = {
-        "MAE": mae(outputs, labels),
-        "MSE": mse(outputs, labels),
-        "MRE": mre(outputs, labels),
+        'MAE': mae(outputs, labels),
+        'MSE': mse(outputs, labels),
+        'MRE': mre(outputs, labels),
     }
     for metric, value in results.items():
         print(f"{metric}: {value:,.3f}")
-
-    # Show a parity plot.
-    plot_parity(outputs, labels)
 
     return results
 
 def main(
     epoch_count: int, learning_rate: float, batch_sizes: Tuple[int, int, int], dataset_split: Tuple[float, float, float],
-    train: bool, test: bool, evaluate: bool, train_existing: bool, save_model_every: int,
-    model: torch.nn.Module, filename_model: str, dataset: Dataset, loss_function: torch.nn.Module, Optimizer: torch.optim.Optimizer, scheduler=None
+    train: bool, test: bool, train_existing: bool, save_model_every: int,
+    model: torch.nn.Module, filename_model: str, dataset: Dataset, loss_function: torch.nn.Module, Optimizer: torch.optim.Optimizer, scheduler=None,
+    show_parity: bool=True, show_results: bool=True,
 ):
     """
     Inputs:
@@ -234,6 +225,9 @@ def main(
     `loss_function`: The loss function, as an instance of a Module subclass.
     `Optimizer`: An Optimizer subclass to instantiate, not an instance of the class.
     `scheduler`: A learning rate scheduler.
+
+    `show_parity`: Show a parity plot after testing.
+    `show_results`: Show the results after testing.
     """
 
     filepath_model = os.path.join(FOLDER_CHECKPOINTS, filename_model)
@@ -286,12 +280,20 @@ def main(
             test_dataloader = test_dataloader,
         )
 
-        if evaluate:
-            results = evaluate_results(outputs.numpy(), labels.numpy())
+        results = evaluate_results(outputs.numpy(), labels.numpy())
 
-            for i in range(3):
-                index = random.randint(0, len(test_dataset)-1)
-                plot_comparison(outputs[index], labels[index])
+        # Show a parity plot.
+        if show_parity:
+            plot_parity(outputs, labels)
+
+        # Show a comparison plot of the results with labels.
+        if show_results:
+            for index in random.sample(range(len(test_dataset)), k=3):
+                plot_comparison(
+                    outputs[index],
+                    labels[index],
+                    str(test_dataset[index][2]),
+                )
 
     return results
 
@@ -299,13 +301,12 @@ def main(
 if __name__ == '__main__':
     main(
         epoch_count = 500,
-        learning_rate = 1e-4,
+        learning_rate = 1e-3,
         batch_sizes = (8, 8, 8),
         dataset_split = (0.8, 0.1, 0.1),
 
         train = True,
         test = True,
-        evaluate = True,
         train_existing = True,
         save_model_every = 10,
 

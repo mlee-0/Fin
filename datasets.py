@@ -53,8 +53,8 @@ class TemperatureDataset(Dataset):
     def __len__(self) -> int:
         return self.inputs.size(0)
 
-    def __getitem__(self, index):
-        return self.inputs[index], self.outputs[index]
+    def __getitem__(self, index) -> Tuple[torch.Tensor, torch.Tensor, tuple]:
+        return self.inputs[index], self.outputs[index], self.parameters[index]
 
 
 if __name__ == '__main__':
