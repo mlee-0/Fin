@@ -55,7 +55,7 @@ class FinDataset(Dataset):
         elif response == 'stress':
             self.outputs = load_pickle('Structural/outputs.pickle')[..., 0].float()
         else:
-            raise Exception(f"Invalid response: {response}.")
+            raise Exception(f"Invalid response: '{response}'.")
 
         print_dataset_summary(self.inputs, self.outputs)
 

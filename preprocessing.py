@@ -19,24 +19,31 @@ def make_inputs(parameters: List[tuple]) -> torch.Tensor:
     scale = 4
 
     n = len(parameters)
-    channels = 1
+    channels = 2
     height, width = 10*scale, 20*scale
 
     array = np.zeros([n, channels, height, width])
-    for i, (height_, taper_ratio) in enumerate(parameters):
-        height_ *= scale
-        height_end = round(taper_ratio * height_)
+    for i, (thickness, taper_ratio, convection_coefficient) in enumerate(parameters):
+        thickness *= scale
+        thickness_end = round(taper_ratio * thickness)
         points = [
             (0, 0),
-            (width - 1, (height_ - height_end)/2),
-            (width - 1, (height_ - height_end)/2 + height_end - 1),
-            (0, height_ - 1),
+            (width - 1, (thickness - thickness_end)/2),
+            (width - 1, (thickness - thickness_end)/2 + thickness_end - 1),
+            (0, thickness - 1),
         ]
 
+        # Create a filled quadrilateral in the first channel.
         image = Image.new('1', (width, height))
         draw = ImageDraw.Draw(image)
         draw.polygon(points, fill=1, outline=1)
         array[i, 0, ...] = np.asarray(image, dtype=float)
+
+        # Create three lines in the second channel.
+        draw.rectangle([(0, 0), (width, height)], fill=0)
+        draw.line(points, fill=1)
+        array[i, 1, ...] = np.asarray(image, dtype=float)
+        array[i, 1, ...] *= (convection_coefficient / 100)
 
     array = torch.tensor(array, dtype=torch.float32)
 
@@ -126,6 +133,9 @@ if __name__ == '__main__':
     # outputs = read_simulations_static('Structural')
     # plot_comparison(outputs[300], outputs[308])
 
-    # plt.imshow(make_inputs([[6, 0.2]])[0, 0, ...], cmap='gray')
-    # plt.grid(which='both')
+    # inputs = make_inputs([[10, 0.2, 20]])
+    # plt.subplot(1, 2, 1)
+    # plt.imshow(inputs[0, 0, ...], cmap='gray', vmin=0, vmax=1)
+    # plt.subplot(1, 2, 2)
+    # plt.imshow(inputs[0, 1, ...], cmap='gray', vmin=0, vmax=1)
     # plt.show()

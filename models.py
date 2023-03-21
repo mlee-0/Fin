@@ -18,11 +18,11 @@ class ResNet(Module):
     def __init__(self) -> None:
         super().__init__()
 
-        input_channels, output_channels = 1, 10
+        input_channels, output_channels = 2, 10
         c = 16
 
         self.convolution_1 = Sequential(
-            Conv2d(1, c*1, kernel_size=3, stride=2, padding=1),
+            Conv2d(input_channels, c*1, kernel_size=3, stride=2, padding=1),
             BatchNorm2d(c*1),
             ReLU(inplace=True),
         )
