@@ -31,10 +31,10 @@ poissons_ratio = 0.3
 
 ! Simulation settings.
 initial_temperature = 22+273.15
-initial_temperature_left = 100+273.15
+temperature_left = 100+273.15
 convection_bulk_temperature = 22+273.15
 coefficient_thermal_expansion = 16e-9
-duration = 5
+duration = 100
 steps = 10
 
 
@@ -734,10 +734,8 @@ AMESH, 1
 ! Specify the initial temperature on all nodes.
 ALLSEL, ALL, NODE
 IC, ALL, TEMP, initial_temperature
-! Specify the intial temperature on the left edge.
-LSEL, S, , , 4
-NSLL, S, 1
-IC, ALL, TEMP, initial_temperature_left
+! Specify the temperature boundary condition on the left edge.
+DL, 4, , TEMP, temperature_left
 ! Specify a convection boundary condition.
 LSEL, S, , , 1, 3, 1, 0
 SFL, ALL, CONV, convection_coefficient, , convection_bulk_temperature
