@@ -77,8 +77,8 @@ def train_model(
             # Adjust model parameters.
             optimizer.step()
 
-            if batch % 10 == 0:
-                print(f"Batch {batch}/{len(train_dataloader)}: {loss/batch:,.2e}...", end='\r')
+            if batch % 5 == 0:
+                print(f"Batch {batch}/{len(train_dataloader)}: {loss_current.item():,.2e}...", end='\r')
 
         loss /= len(train_dataloader.dataset)
         losses_training.append(loss)
@@ -105,7 +105,7 @@ def train_model(
                 outputs.append(output_data)
                 labels.append(label_data)
 
-                if batch % 10 == 0:
+                if batch % 1 == 0:
                     print(f"Batch {batch}/{len(validate_dataloader)}...", end='\r')
  
         loss /= len(validate_dataloader.dataset)
@@ -187,7 +187,7 @@ def test_model(
 
     return outputs, labels, inputs
 
-def evaluate_results(outputs: np.ndarray, labels: np.ndarray, queue=None, info_gui: dict=None):
+def evaluate_results(outputs: np.ndarray, labels: np.ndarray):
     """Print and return evaluation metrics."""
 
     results = {
@@ -292,7 +292,7 @@ def main(
                 plot_comparison(
                     outputs[index],
                     labels[index],
-                    str(test_dataset[index][2]),
+                    # str(test_dataset[index][2]),
                 )
 
     return results
@@ -302,7 +302,7 @@ if __name__ == '__main__':
     main(
         epoch_count = 500,
         learning_rate = 1e-3,
-        batch_sizes = (8, 8, 8),
+        batch_sizes = (32, 8, 8),
         dataset_split = (0.8, 0.1, 0.1),
 
         train = True,
@@ -310,9 +310,9 @@ if __name__ == '__main__':
         train_existing = True,
         save_model_every = 10,
 
-        model = ResNet(),
-        filename_model = 'temperature.pth',
-        dataset = FinDataset('temperature'),
+        model = Autoencoder32(),
+        filename_model = 'autoencoder_32.pth',
+        dataset = AutoencoderDataset(),  #FinDataset('temperature'),
         loss_function = MSELoss(),
         Optimizer = torch.optim.Adam,
         scheduler = None,

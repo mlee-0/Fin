@@ -116,13 +116,13 @@ def load_pickle(filename: str) -> Any:
 
 # Run this file to read simulation data and save as a .pickle file.
 if __name__ == '__main__':
-    outputs = read_simulations_transient('Thermal')
+    outputs = read_simulations_transient('Thermal 2023-03-21')
     outputs = torch.tensor(outputs, dtype=torch.float32)
-    save_pickle(outputs, 'Thermal/outputs.pickle')
+    save_pickle(outputs, 'Thermal 2023-03-21/outputs.pickle')
 
-    outputs = read_simulations_static('Structural')
+    outputs = read_simulations_static('Structural 2023-03-21')
     outputs = torch.tensor(outputs, dtype=torch.float32)
-    save_pickle(outputs, 'Structural/outputs.pickle')
+    save_pickle(outputs, 'Structural 2023-03-21/outputs.pickle')
 
     # from metrics import *
     # outputs = read_simulations_transient('Thermal')
