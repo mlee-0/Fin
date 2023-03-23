@@ -49,11 +49,11 @@ class FinDataset(Dataset):
         self.inputs = make_inputs(self.parameters).float()
 
         if response == 'temperature':
-            self.outputs = load_pickle('Thermal/outputs.pickle')[..., 0].float()
+            self.outputs = load_pickle('Thermal 2023-03-21/outputs.pickle')[..., 0].float()
         elif response == 'thermal gradient':
-            self.outputs = load_pickle('Thermal/outputs.pickle')[..., 1].float()
+            self.outputs = load_pickle('Thermal 2023-03-21/outputs.pickle')[..., 1].float()
         elif response == 'stress':
-            self.outputs = load_pickle('Structural/outputs.pickle')[..., 0].float()
+            self.outputs = load_pickle('Structural 2023-03-21/outputs.pickle')[..., 0].float()
         else:
             raise Exception(f"Invalid response: '{response}'.")
 
@@ -82,5 +82,4 @@ class AutoencoderDataset(Dataset):
 
 
 if __name__ == '__main__':
-    # dataset = TemperatureDataset()
-    print_simulation_parameters()
+    dataset = FinDataset('temperature')
