@@ -6,7 +6,6 @@ import os
 import pickle
 from typing import *
 
-import matplotlib.pyplot as plt
 import numpy as np
 from PIL import Image, ImageDraw
 import torch
@@ -19,11 +18,11 @@ def make_inputs(parameters: List[tuple]) -> torch.Tensor:
     scale = 4
 
     n = len(parameters)
-    channels = 2
+    channels = 3
     height, width = 10*scale, 20*scale
 
     array = np.zeros([n, channels, height, width])
-    for i, (thickness, taper_ratio, convection_coefficient) in enumerate(parameters):
+    for i, (thickness, taper_ratio, convection_coefficient, temperature_left) in enumerate(parameters):
         thickness *= scale
         thickness_end = round(taper_ratio * thickness)
         points = [
@@ -44,6 +43,12 @@ def make_inputs(parameters: List[tuple]) -> torch.Tensor:
         draw.line(points, fill=1)
         array[i, 1, ...] = np.asarray(image, dtype=float)
         array[i, 1, ...] *= (convection_coefficient / 100)
+
+        # Create a line in the third channel.
+        draw.rectangle([(0, 0), (width, height)], fill=0)
+        draw.line([points[0], points[-1]], fill=1)
+        array[i, 2, ...] = np.asarray(image, dtype=float)
+        array[i, 2, ...] *= temperature_left / 100
 
     array = torch.tensor(array, dtype=torch.float32)
 
@@ -116,13 +121,13 @@ def load_pickle(filename: str) -> Any:
 
 # Run this file to read simulation data and save as a .pickle file.
 if __name__ == '__main__':
-    outputs = read_simulations_transient('Thermal 2023-03-21')
+    outputs = read_simulations_transient('Thermal 2023-03-23')
     outputs = torch.tensor(outputs, dtype=torch.float32)
-    save_pickle(outputs, 'Thermal 2023-03-21/outputs.pickle')
+    save_pickle(outputs, 'Thermal 2023-03-23/outputs.pickle')
 
-    outputs = read_simulations_static('Structural 2023-03-21')
+    outputs = read_simulations_static('Structural 2023-03-23')
     outputs = torch.tensor(outputs, dtype=torch.float32)
-    save_pickle(outputs, 'Structural 2023-03-21/outputs.pickle')
+    save_pickle(outputs, 'Structural 2023-03-23/outputs.pickle')
 
     # from metrics import *
     # outputs = read_simulations_transient('Thermal')

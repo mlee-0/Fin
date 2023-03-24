@@ -11,18 +11,12 @@ def generate_simulation_parameters() -> List[Tuple[float, float]]:
     """Return a list of tuples of simulation parameters for each simulation."""
 
     return [
-        (height, taper_ratio, convection_coefficient)
-        for height in np.arange(5, 10+1, 1).round(0)
+        (thickness, taper_ratio, convection_coefficient, temperature)
+        for thickness in np.arange(5, 10+1, 1).round(0)
         for taper_ratio in np.arange(0.1, 1+0.1, 0.1).round(1)
         for convection_coefficient in np.arange(10, 100+1, 10).round(0)
+        for temperature in np.arange((30+273.15), (100+273.15)+1, 10).round(2)
     ]
-
-def print_simulation_parameters() -> None:
-    """Print lines that define the simulation parameters, to be copied to the Ansys script."""
-
-    parameters = generate_simulation_parameters()
-    for i, parameter in enumerate(parameters, 1):
-        print(f"parameters(1,{i}) = {str(parameter)[1:-1]}")
 
 def print_dataset_summary(inputs: torch.Tensor, outputs: torch.Tensor) -> None:
     """Print information about the given input and output data."""
@@ -49,11 +43,11 @@ class FinDataset(Dataset):
         self.inputs = make_inputs(self.parameters).float()
 
         if response == 'temperature':
-            self.outputs = load_pickle('Thermal 2023-03-21/outputs.pickle')[..., 0].float()
+            self.outputs = load_pickle('Thermal 2023-03-23/outputs.pickle')[..., 0].float()
         elif response == 'thermal gradient':
-            self.outputs = load_pickle('Thermal 2023-03-21/outputs.pickle')[..., 1].float()
+            self.outputs = load_pickle('Thermal 2023-03-23/outputs.pickle')[..., 1].float()
         elif response == 'stress':
-            self.outputs = load_pickle('Structural 2023-03-21/outputs.pickle')[..., 0].float()
+            self.outputs = load_pickle('Structural 2023-03-23/outputs.pickle')[..., 0].float()
         else:
             raise Exception(f"Invalid response: '{response}'.")
 
@@ -73,7 +67,7 @@ class AutoencoderDataset(Dataset):
 
         self.parameters = generate_simulation_parameters()
         self.inputs = make_inputs(self.parameters).float()
-    
+
     def __len__(self) -> int:
         return self.inputs.size(0)
 
