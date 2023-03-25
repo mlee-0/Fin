@@ -48,7 +48,7 @@ def make_inputs(parameters: List[tuple]) -> torch.Tensor:
         draw.rectangle([(0, 0), (width, height)], fill=0)
         draw.line([points[0], points[-1]], fill=1)
         array[i, 2, ...] = np.asarray(image, dtype=float)
-        array[i, 2, ...] *= temperature_left / 100
+        array[i, 2, ...] *= (temperature_left - 273.15) / 100
 
     array = torch.tensor(array, dtype=torch.float32)
 
