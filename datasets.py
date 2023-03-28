@@ -1,13 +1,14 @@
 """Load data."""
 
 
+import matplotlib.pyplot as plt
 import numpy as np
 from torch.utils.data import Dataset
 
 from preprocessing import *
 
 
-def generate_simulation_parameters() -> List[Tuple[float, float]]:
+def generate_simulation_parameters() -> List[Tuple[float, float, float, float]]:
     """Return a list of tuples of simulation parameters for each simulation."""
 
     return [
@@ -18,32 +19,52 @@ def generate_simulation_parameters() -> List[Tuple[float, float]]:
         for temperature in np.arange((30+273.15), (100+273.15)+1, 10).round(2)
     ]
 
+def histogram_simulation_parameters(parameters: List[Tuple[float, float, float, float]]) -> None:
+    """Show a histogram of the given list of parameters."""
+
+    parameters = np.array(parameters)
+    plt.subplot(4, 1, 1)
+    plt.hist(parameters[:, 0], bins=6)
+    plt.subplot(4, 1, 2)
+    plt.hist(parameters[:, 1], bins=10)
+    plt.subplot(4, 1, 3)
+    plt.hist(parameters[:, 2], bins=10)
+    plt.subplot(4, 1, 4)
+    plt.hist(parameters[:, 3], bins=8)
+    plt.show()
+
 def print_dataset_summary(inputs: torch.Tensor, outputs: torch.Tensor) -> None:
     """Print information about the given input and output data."""
 
-    print(f"Input data:")
+    print(f"\nInput data:")
     print(f"\tShape: {inputs.size()}")
     print(f"\tMemory: {inputs.storage().nbytes()/1e6:,.2f} MB")
     print(f"\tMin, max: {inputs.min()}, {inputs.max()}")
+    print(f"\tMean, standard deviation: {inputs.mean()}, {inputs.std()}")
 
     print(f"Label data:")
     print(f"\tShape: {outputs.size()}")
     print(f"\tMemory: {outputs.storage().nbytes()/1e6:,.2f} MB")
     print(f"\tMin, max: {outputs.min()}, {outputs.max()}")
-    print(f"\tMean: {outputs.mean()}")
+    print(f"\tMean, standard deviation: {outputs.mean()}, {outputs.std()}")
 
 
 class FinDataset(Dataset):
     """Dataset of a specific response obtained in FEA."""
 
-    def __init__(self, response: str) -> None:
+    def __init__(self, response: str, normalize_inputs: bool=False) -> None:
         super().__init__()
 
         self.parameters = generate_simulation_parameters()
         self.inputs = make_inputs(self.parameters).float()
 
+        if normalize_inputs:
+            self.inputs -= self.inputs.min()
+            self.inputs /= self.inputs.std()
+
         if response == 'temperature':
             self.outputs = load_pickle('Thermal 2023-03-23/outputs.pickle')[..., 0].float()
+            self.outputs -= self.outputs.min()
         elif response == 'thermal gradient':
             self.outputs = load_pickle('Thermal 2023-03-23/outputs.pickle')[..., 1].float()
         elif response == 'stress':

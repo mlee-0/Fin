@@ -40,9 +40,42 @@ def split_dataset(dataset_size: int, splits: List[float]) -> List[int]:
 
     return subset_sizes
 
+# def hyperparameter_grid_search(**kwargs: Tuple[float, float, float]) -> list:
+#     """Return a dictionary of hyperparameter values within the provided bounds and increment.
+    
+#     Provide a keyword argument for each hyperparameter as a range and increment in which to generate evenly spaced values. For example: `batch_size=(2, 128, 2)` results in the values `2, 4, 6, ..., 124, 126, 128`.
+#     """
+
+#     arrays = np.meshgrid(
+#         *[np.arange(minimum, maximum+(increment/2), increment) for minimum, maximum, increment in kwargs.values()]
+#     )
+#     return {
+#         hyperparameter: array.flatten()
+#         for hyperparameter, array in zip(kwargs.keys(), arrays)
+#     }
+
+def hyperparameter_random_search(count: int, **kwargs: Tuple[float, float]) -> Dict[str, np.ndarray]:
+    """Return a dictionary of `count` random hyperparameter values within the provided bounds.
+    
+    Provide a keyword argument for each hyperparameter as a range in which to generate values. For example: `batch_size=(2, 128)` results in random values for `learning_rate` generated between `2` and `128`.
+    """
+
+    return {
+        hyperparameter: np.random.random(count) * (maximum - minimum) + minimum
+        for hyperparameter, (minimum, maximum) in kwargs.items()
+    }
+
+def plot_loss(losses_training: List[float], losses_validation: List[float]) -> None:
+    plt.figure()
+    plt.semilogy(range(1, len(losses_training)+1), losses_training, '-', label='Training')
+    plt.semilogy(range(1, len(losses_validation)+1), losses_validation, '-', label='Validation')
+    plt.xlabel('Epoch')
+    plt.ylabel('Loss')
+    plt.legend()
+    plt.show()
 
 def train_model(
-    epoch_count: int, checkpoint: dict, filepath_model: str, save_model_every: int, save_best_only: bool,
+    epoch_count: int, checkpoint: dict, filepath_model: str, save_model_every: int, save_best_separately: bool,
     model: torch.nn.Module, optimizer: torch.optim.Optimizer, loss_function: torch.nn.Module,
     train_dataloader: DataLoader, validate_dataloader: DataLoader,
     scheduler = None,
@@ -56,7 +89,6 @@ def train_model(
     epochs = range(epoch, epoch+epoch_count)
 
     for epoch in epochs:
-        print(f"\nEpoch {epoch}/{epochs[-1]} ({time.strftime('%I:%M %p')})")
         time_start = time.time()
         
         # Train on the training dataset.
@@ -105,24 +137,19 @@ def train_model(
                 outputs.append(output_data)
                 labels.append(label_data)
 
-                if batch % 1 == 0:
+                if batch % 10 == 0:
                     print(f"Batch {batch}/{len(validate_dataloader)}...", end='\r')
  
         loss /= len(validate_dataloader.dataset)
         losses_validation.append(loss)
-
-        print(f"Loss: {losses_training[-1]:,.2e} (training), {losses_validation[-1]:,.2e} (validation)")
 
         # # Calculate evaluation metrics on validation results.
         # outputs = torch.cat(outputs, dim=0)
         # labels = torch.cat(labels, dim=0)
         # evaluate_results(outputs.numpy(), labels.numpy())
 
-        # Save the model periodically and in the last epoch, or only save if the model achieved the lowest validation loss so far.
-        if (
-            (save_best_only and losses_validation[-1] <= min(losses_validation)) or
-            (not save_best_only and (epoch % save_model_every == 0 or epoch == epochs[-1]))
-        ):
+        # Save the model periodically and in the last epoch.
+        if epoch % save_model_every == 0 or epoch == epochs[-1]:
             save_model(
                 filepath_model,
                 epoch = epoch,
@@ -132,24 +159,27 @@ def train_model(
                 losses_training = losses_training,
                 losses_validation = losses_validation,
             )
+        # Save the model if the model achieved the lowest validation loss so far.
+        if save_best_separately and losses_validation[-1] <= min(losses_validation):
+            save_model(
+                f"{filepath_model[:-4]}[best]{filepath_model[-4:]}",
+                epoch = epoch,
+                model_state_dict = model.state_dict(),
+                optimizer_state_dict = optimizer.state_dict(),
+                learning_rate = optimizer.param_groups[0]['lr'],
+                losses_training = losses_training,
+                losses_validation = losses_validation,
+            )
 
-        # Show the elapsed time during the epoch.
+
+        # Show a summary of the epoch.
         time_end = time.time()
         duration = time_end - time_start
         if duration >= 60:
             duration_text = f"{duration/60:.1f} minutes"
         else:
             duration_text = f"{duration:.1f} seconds"
-        print(f"Finished epoch {epoch} in {duration_text}.")
-
-    # Plot the loss history.
-    plt.figure()
-    plt.semilogy(range(1, len(losses_training)+1), losses_training, '-', label='Training')
-    plt.semilogy(range(1, len(losses_validation)+1), losses_validation, '-', label='Validation')
-    plt.xlabel('Epoch')
-    plt.ylabel('Loss')
-    plt.legend()
-    plt.show()
+        print(f"Epoch {epoch}/{epochs[-1]} ({time.strftime('%I:%M %p')}, {duration_text}): {losses_training[-1]:,.2e} (training), {losses_validation[-1]:,.2e} (validation)")
 
     return model
 
@@ -177,7 +207,7 @@ def test_model(
             labels.append(label_data)
             outputs.append(output_data)
             
-            if batch % 1 == 0:
+            if batch % 10 == 0:
                 print(f"Batch {batch}/{len(test_dataloader)}...", end='\r')
 
     loss /= batch
@@ -205,9 +235,9 @@ def evaluate_results(outputs: np.ndarray, labels: np.ndarray):
 
 def main(
     epoch_count: int, learning_rate: float, batch_sizes: Tuple[int, int, int], dataset_split: Tuple[float, float, float],
-    train: bool, test: bool, train_existing: bool, save_model_every: int, save_best_only: bool,
-    model: torch.nn.Module, filename_model: str, dataset: Dataset, loss_function: torch.nn.Module, Optimizer: torch.optim.Optimizer, scheduler=None,
-    show_parity: bool=True, show_results: bool=True,
+    train: bool, test: bool, train_existing: bool, save_model_every: int, save_best_separately: bool,
+    dataset: Dataset, model: torch.nn.Module, filename_model: str, loss_function: torch.nn.Module, Optimizer: torch.optim.Optimizer, scheduler=None,
+    show_loss: bool=True, show_parity: bool=True, show_results: bool=True,
 ):
     """
     Inputs:
@@ -221,7 +251,7 @@ def main(
     `evaluate`: Calculate evaluation metrics on the testing results.
     `train_existing`: Load a previously saved model and continue training.
     `save_model_every`: Number of epochs after which to save the model.
-    `save_best_only`: Only save the model when the lowest validation loss so far is observed.
+    `save_best_separately`: Save the best model as a separate file when the lowest validation loss so far is observed.
 
     `model`: The network, as an instance of a Module subclass.
     `filename_model`: Name of the .pth file to load and save to during training.
@@ -230,6 +260,7 @@ def main(
     `Optimizer`: An Optimizer subclass to instantiate, not an instance of the class.
     `scheduler`: A learning rate scheduler.
 
+    `show_loss`: Show a loss history plot.
     `show_parity`: Show a parity plot after testing.
     `show_results`: Show the results after testing.
     """
@@ -269,7 +300,7 @@ def main(
             checkpoint = checkpoint,
             filepath_model = filepath_model,
             save_model_every = save_model_every,
-            save_best_only = save_best_only,
+            save_best_separately = save_best_separately,
             model = model,
             optimizer = optimizer,
             loss_function = loss_function,
@@ -287,39 +318,80 @@ def main(
 
         results = evaluate_results(outputs.numpy(), labels.numpy())
 
+        # Show the loss history.
+        if show_loss:
+            checkpoint = load_model(filepath_model)
+            losses_training = checkpoint.get('losses_training', [])
+            losses_validation = checkpoint.get('losses_validation', [])
+            plot_loss(losses_training, losses_validation)
+
         # Show a parity plot.
         if show_parity:
             plot_parity(outputs, labels)
 
         # Show a comparison plot of the results with labels.
         if show_results:
-            for index in random.sample(range(len(test_dataset)), k=3):
+            for index in random.sample(range(len(test_dataset)), k=5):
                 plot_comparison(
                     outputs[index],
                     labels[index],
-                    # str(test_dataset[index][2]),
+                    str(test_dataset[index][2]),
                 )
 
     return results
 
 
 if __name__ == '__main__':
-    main(
-        epoch_count = 100,
-        learning_rate = 1e-3,
-        batch_sizes = (32, 8, 8),
-        dataset_split = (0.8, 0.1, 0.1),
+    # count = 1
+    # hyperparameters = hyperparameter_random_search(
+    #     count,
+    #     learning_rate_exponent=(-4, 0),
+    #     batch_size=(1, 128),
+    #     model_size=(2, 80),
+    # )
 
-        train = True,
-        test = True,
-        train_existing = True,
-        save_model_every = 10,
-        save_best_only = not True,
+    # import glob
+    # filenames = glob.glob('Checkpoints/rsht_*.pth')
+    # for filename in filenames:
+    #     filename = os.path.basename(filename)
+    #     strings = filename[:-4].split('_')[1:]
+    #     learning_rate_exponent = float(strings[0][3:])
+    #     batch_size = int(strings[1][2:])
+    #     model_size = int(strings[2][1:])
 
-        model = ResNet(10),
-        filename_model = 'autoencoder_32.pth',
-        dataset = FinDataset('temperature'),
-        loss_function = MSELoss(),
-        Optimizer = torch.optim.Adam,
-        scheduler = None,
-    )
+    for learning_rate_exponent in (-3.5, -3.0, -2.5):
+        for batch_size in (1,):
+            for model_size in (2, 8, 16, 32,):
+                filename = f"gsht_lre{learning_rate_exponent}_bs{batch_size}_c{model_size}.pth"
+
+            # for i in range(count):
+                # learning_rate_exponent = round(hyperparameters['learning_rate_exponent'][i], 4)
+                # batch_size = round(hyperparameters['batch_size'][i])
+                # model_size = round(hyperparameters['model_size'][i])
+                # filename = f"rsht_lre{learning_rate_exponent}_bs{batch_size}_c{model_size}.pth"
+
+                print(filename)
+
+                main(
+                    epoch_count = 10,
+                    learning_rate = 10 ** learning_rate_exponent,
+                    batch_sizes = (batch_size, 32, 32),
+                    dataset_split = (0.8, 0.1, 0.1),
+
+                    train = True,
+                    test = True,
+                    train_existing = not True,
+                    save_model_every = 10,
+                    save_best_separately = not True,
+
+                    dataset = FinDataset('temperature'),
+                    model = ThermalNet(model_size, 10),
+                    filename_model = filename,
+                    loss_function = MSELoss(),
+                    Optimizer = torch.optim.Adam,
+                    scheduler = None,
+
+                    show_loss = not True,
+                    show_parity = not True,
+                    show_results = not True,
+                )
