@@ -74,114 +74,59 @@ def plot_loss(losses_training: List[float], losses_validation: List[float]) -> N
     plt.legend()
     plt.show()
 
-def train_model(
-    epoch_count: int, checkpoint: dict, filepath_model: str, save_model_every: int, save_best_separately: bool,
-    model: torch.nn.Module, optimizer: torch.optim.Optimizer, loss_function: torch.nn.Module,
-    train_dataloader: DataLoader, validate_dataloader: DataLoader,
-    scheduler = None,
-) -> torch.nn.Module:
+def train_model(model: torch.nn.Module, optimizer: torch.optim.Optimizer, loss_function: torch.nn.Module, train_dataloader: DataLoader):
+    """Train on the training dataset."""
 
-    # Load data from the checkpoint.
-    epoch = checkpoint.get('epoch', 0) + 1
-    losses_training = checkpoint.get('losses_training', [])
-    losses_validation = checkpoint.get('losses_validation', [])
-
-    epochs = range(epoch, epoch+epoch_count)
-
-    for epoch in epochs:
-        time_start = time.time()
+    model.train(True)
+    loss = 0
+    for batch, (input_data, label_data, *_) in enumerate(train_dataloader, 1):
+        # Predict an output from the model with the given input.
+        output_data = model(input_data)
+        # Calculate the loss.
+        loss_current = loss_function(output_data, label_data)
+        # Update the cumulative loss.
+        loss += loss_current.item() * input_data.size(0)
         
-        # Train on the training dataset.
-        model.train(True)
-        loss = 0
-        for batch, (input_data, label_data, *_) in enumerate(train_dataloader, 1):
-            # Predict an output from the model with the given input.
+        # Reset gradients of model parameters.
+        optimizer.zero_grad()
+        # Calculate gradients.
+        loss_current.backward()
+        # Adjust model parameters.
+        optimizer.step()
+
+        if batch % 5 == 0:
+            print(f"Batch {batch}/{len(train_dataloader)}: {loss_current.item():,.2e}...", end='\r')
+
+    return loss / len(train_dataloader.dataset)
+
+def validate_model(model: torch.nn.Module, loss_function: torch.nn.Module, validate_dataloader: DataLoader):
+    """Test on the validation dataset."""
+
+    # Set model to evaluation mode, which is required if it contains batch normalization layers, dropout layers, and other layers that behave differently during training and evaluation.
+    model.train(False)
+    loss = 0
+    outputs = []
+    labels = []
+    with torch.no_grad():
+        for batch, (input_data, label_data, *_) in enumerate(validate_dataloader, 1):
             output_data = model(input_data)
-            # Calculate the loss.
-            loss_current = loss_function(output_data, label_data)
-            # Update the cumulative loss.
-            loss += loss_current.item() * input_data.size(0)
-            
-            # Reset gradients of model parameters.
-            optimizer.zero_grad()
-            # Calculate gradients.
-            loss_current.backward()
-            # Adjust model parameters.
-            optimizer.step()
+            loss += loss_function(output_data, label_data.float()).item() * input_data.size(0)
 
-            if batch % 5 == 0:
-                print(f"Batch {batch}/{len(train_dataloader)}: {loss_current.item():,.2e}...", end='\r')
+            output_data = output_data.cpu()
+            label_data = label_data.cpu()
 
-        loss /= len(train_dataloader.dataset)
-        losses_training.append(loss)
+            outputs.append(output_data)
+            labels.append(label_data)
 
-        # Adjust the learning rate if a scheduler is used.
-        if scheduler:
-            scheduler.step()
-            learning_rate = optimizer.param_groups[0]["lr"]
-            print(f"Learning rate: {learning_rate}")
+            if batch % 10 == 0:
+                print(f"Batch {batch}/{len(validate_dataloader)}...", end='\r')
 
-        # Test on the validation dataset. Set model to evaluation mode, which is required if it contains batch normalization layers, dropout layers, and other layers that behave differently during training and evaluation.
-        model.train(False)
-        loss = 0
-        outputs = []
-        labels = []
-        with torch.no_grad():
-            for batch, (input_data, label_data, *_) in enumerate(validate_dataloader, 1):
-                output_data = model(input_data)
-                loss += loss_function(output_data, label_data.float()).item() * input_data.size(0)
+    # # Calculate evaluation metrics on validation results.
+    # outputs = torch.cat(outputs, dim=0)
+    # labels = torch.cat(labels, dim=0)
+    # evaluate_results(outputs.numpy(), labels.numpy())
 
-                output_data = output_data.cpu()
-                label_data = label_data.cpu()
-
-                outputs.append(output_data)
-                labels.append(label_data)
-
-                if batch % 10 == 0:
-                    print(f"Batch {batch}/{len(validate_dataloader)}...", end='\r')
- 
-        loss /= len(validate_dataloader.dataset)
-        losses_validation.append(loss)
-
-        # # Calculate evaluation metrics on validation results.
-        # outputs = torch.cat(outputs, dim=0)
-        # labels = torch.cat(labels, dim=0)
-        # evaluate_results(outputs.numpy(), labels.numpy())
-
-        # Save the model periodically and in the last epoch.
-        if epoch % save_model_every == 0 or epoch == epochs[-1]:
-            save_model(
-                filepath_model,
-                epoch = epoch,
-                model_state_dict = model.state_dict(),
-                optimizer_state_dict = optimizer.state_dict(),
-                learning_rate = optimizer.param_groups[0]['lr'],
-                losses_training = losses_training,
-                losses_validation = losses_validation,
-            )
-        # Save the model if the model achieved the lowest validation loss so far.
-        if save_best_separately and losses_validation[-1] <= min(losses_validation):
-            save_model(
-                f"{filepath_model[:-4]}[best]{filepath_model[-4:]}",
-                epoch = epoch,
-                model_state_dict = model.state_dict(),
-                optimizer_state_dict = optimizer.state_dict(),
-                learning_rate = optimizer.param_groups[0]['lr'],
-                losses_training = losses_training,
-                losses_validation = losses_validation,
-            )
-
-
-        # Show a summary of the epoch.
-        time_end = time.time()
-        duration = time_end - time_start
-        if duration >= 60:
-            duration_text = f"{duration/60:.1f} minutes"
-        else:
-            duration_text = f"{duration:.1f} seconds"
-        print(f"Epoch {epoch}/{epochs[-1]} ({time.strftime('%I:%M %p')}, {duration_text}): {losses_training[-1]:,.2e} (training), {losses_validation[-1]:,.2e} (validation)")
-
-    return model
+    return loss / len(validate_dataloader.dataset)
 
 def test_model(
     model: torch.nn.Module, loss_function: torch.nn.Module, test_dataloader: DataLoader,
@@ -238,7 +183,7 @@ def main(
     train: bool, test: bool, train_existing: bool, save_model_every: int, save_best_separately: bool,
     dataset: Dataset, model: torch.nn.Module, filename_model: str, loss_function: torch.nn.Module, Optimizer: torch.optim.Optimizer, scheduler=None,
     show_loss: bool=True, show_parity: bool=True, show_results: bool=True,
-):
+) -> None:
     """
     Inputs:
     `epoch_count`: Number of epochs to train.
@@ -295,19 +240,65 @@ def main(
         optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
 
     if train:
-        model = train_model(
-            epoch_count = epoch_count,
-            checkpoint = checkpoint,
-            filepath_model = filepath_model,
-            save_model_every = save_model_every,
-            save_best_separately = save_best_separately,
-            model = model,
-            optimizer = optimizer,
-            loss_function = loss_function,
-            train_dataloader = train_dataloader,
-            validate_dataloader = validate_dataloader,
-            scheduler = scheduler,
-            )
+        epoch = checkpoint.get('epoch', 0) + 1
+        epochs = range(epoch, epoch+epoch_count)
+
+        losses_training = checkpoint.get('losses_training', [])
+        losses_validation = checkpoint.get('losses_validation', [])
+
+        for epoch in epochs:
+            time_start = time.time()
+            
+            loss = train_model(model, optimizer, loss_function, train_dataloader)
+            losses_training.append(loss)
+
+            # Adjust the learning rate if a scheduler is used.
+            if scheduler:
+                scheduler.step()
+                learning_rate = optimizer.param_groups[0]["lr"]
+                print(f"Learning rate: {learning_rate}")
+
+            loss = validate_model(model, loss_function, validate_dataloader)
+            losses_validation.append(loss)
+
+            # Show a summary of the epoch.
+            time_end = time.time()
+            duration = time_end - time_start
+            if duration >= 60:
+                duration_text = f"{duration/60:.1f} minutes"
+            else:
+                duration_text = f"{duration:.1f} seconds"
+            print(f"Epoch {epoch}/{epochs[-1]} ({time.strftime('%I:%M %p')}, {duration_text}): {losses_training[-1]:,.2e} (training), {losses_validation[-1]:,.2e} (validation)")
+
+            # Save the model periodically and in the last epoch.
+            if epoch % save_model_every == 0 or epoch == epochs[-1]:
+                save_model(
+                    filepath_model,
+                    epoch = epoch,
+                    model_state_dict = model.state_dict(),
+                    optimizer_state_dict = optimizer.state_dict(),
+                    learning_rate = optimizer.param_groups[0]['lr'],
+                    losses_training = losses_training,
+                    losses_validation = losses_validation,
+                )
+            # Save the model if the model achieved the lowest validation loss so far.
+            if save_best_separately and losses_validation[-1] <= min(losses_validation):
+                save_model(
+                    f"{filepath_model[:-4]}[best]{filepath_model[-4:]}",
+                    epoch = epoch,
+                    model_state_dict = model.state_dict(),
+                    optimizer_state_dict = optimizer.state_dict(),
+                    learning_rate = optimizer.param_groups[0]['lr'],
+                    losses_training = losses_training,
+                    losses_validation = losses_validation,
+                )
+
+    # Show the loss history.
+    if show_loss:
+        checkpoint = load_model(filepath_model)
+        losses_training = checkpoint.get('losses_training', [])
+        losses_validation = checkpoint.get('losses_validation', [])
+        plot_loss(losses_training, losses_validation)
 
     if test:
         outputs, labels, inputs = test_model(
@@ -317,13 +308,6 @@ def main(
         )
 
         results = evaluate_results(outputs.numpy(), labels.numpy())
-
-        # Show the loss history.
-        if show_loss:
-            checkpoint = load_model(filepath_model)
-            losses_training = checkpoint.get('losses_training', [])
-            losses_validation = checkpoint.get('losses_validation', [])
-            plot_loss(losses_training, losses_validation)
 
         # Show a parity plot.
         if show_parity:
@@ -338,60 +322,54 @@ def main(
                     str(test_dataset[index][2]),
                 )
 
-    return results
-
 
 if __name__ == '__main__':
-    # count = 1
+    hyperparameters_from_filename = lambda filename: [float(_) for _ in os.path.basename(filename)[:-4].split('_')[1:]]
+
     # hyperparameters = hyperparameter_random_search(
-    #     count,
+    #     count=10,
     #     learning_rate_exponent=(-4, 0),
     #     batch_size=(1, 128),
     #     model_size=(2, 80),
     # )
 
-    # import glob
     # filenames = glob.glob('Checkpoints/rsht_*.pth')
     # for filename in filenames:
-    #     filename = os.path.basename(filename)
-    #     strings = filename[:-4].split('_')[1:]
-    #     learning_rate_exponent = float(strings[0][3:])
-    #     batch_size = int(strings[1][2:])
-    #     model_size = int(strings[2][1:])
+    #     learning_rate_exponent, batch_size, model_size = hyperparameters_from_filename(filename)
 
-    for learning_rate_exponent in (-3.5, -3.0, -2.5):
-        for batch_size in (1,):
-            for model_size in (2, 8, 16, 32,):
-                filename = f"gsht_lre{learning_rate_exponent}_bs{batch_size}_c{model_size}.pth"
+    # for learning_rate_exponent, batch_size, model_size in zip(hyperparameters['learning_rate_exponent'], hyperparameters['batch_size'], hyperparameters['model_size']):
+    #     # filename = f"rsht_lre{learning_rate_exponent}_bs{batch_size}_c{model_size}.pth"
 
-            # for i in range(count):
-                # learning_rate_exponent = round(hyperparameters['learning_rate_exponent'][i], 4)
-                # batch_size = round(hyperparameters['batch_size'][i])
-                # model_size = round(hyperparameters['model_size'][i])
-                # filename = f"rsht_lre{learning_rate_exponent}_bs{batch_size}_c{model_size}.pth"
+    # for learning_rate_exponent in (-3.5, -3.0, -2.5):
+    #     for batch_size in (1, 8, 16, 64):
+    #         for model_size in (2, 8, 16, 32, 64,):
+    #             filename = f"gsht_lre{learning_rate_exponent}_bs{batch_size}_c{model_size}.pth"
 
-                print(filename)
+                # print(filename)
 
-                main(
-                    epoch_count = 10,
-                    learning_rate = 10 ** learning_rate_exponent,
-                    batch_sizes = (batch_size, 32, 32),
-                    dataset_split = (0.8, 0.1, 0.1),
+    main(
+        epoch_count = 10,
+        learning_rate = 1e-4,
+        batch_sizes = (8, 32, 32),
+        dataset_split = (0.8, 0.1, 0.1),
 
-                    train = True,
-                    test = True,
-                    train_existing = not True,
-                    save_model_every = 10,
-                    save_best_separately = not True,
+        train = True,
+        test = True,
+        train_existing = True,
+        save_model_every = 1,
+        save_best_separately = True,
 
-                    dataset = FinDataset('temperature'),
-                    model = ThermalNet(model_size, 10),
-                    filename_model = filename,
-                    loss_function = MSELoss(),
-                    Optimizer = torch.optim.Adam,
-                    scheduler = None,
+        dataset = FinDataset('temperature'),
+        model = ThermalNet(32, 10),
+        filename_model = 'temperature32.pth',
+        loss_function = MSELoss(),
+        Optimizer = torch.optim.Adam,
+        scheduler = None,
 
-                    show_loss = not True,
-                    show_parity = not True,
-                    show_results = not True,
-                )
+        show_loss = True,
+        show_parity = True,
+        show_results = True,
+    )
+    # checkpoint = load_model('Checkpoints/temperature.pth')
+    # plot_loss(checkpoint['losses_training'], checkpoint['losses_validation'])
+    # print(checkpoint.get('learning_rate', 0))

@@ -52,7 +52,7 @@ def print_dataset_summary(inputs: torch.Tensor, outputs: torch.Tensor) -> None:
 class FinDataset(Dataset):
     """Dataset of a specific response obtained in FEA."""
 
-    def __init__(self, response: str, normalize_inputs: bool=False) -> None:
+    def __init__(self, response: Literal['temperature', 'thermal gradient', 'thermal stress'], normalize_inputs: bool=False) -> None:
         super().__init__()
 
         self.parameters = generate_simulation_parameters()
@@ -67,7 +67,7 @@ class FinDataset(Dataset):
             self.outputs -= self.outputs.min()
         elif response == 'thermal gradient':
             self.outputs = load_pickle('Thermal 2023-03-23/outputs.pickle')[..., 1].float()
-        elif response == 'stress':
+        elif response == 'thermal stress':
             self.outputs = load_pickle('Structural 2023-03-23/outputs.pickle')[..., 0].float()
         else:
             raise Exception(f"Invalid response: '{response}'.")

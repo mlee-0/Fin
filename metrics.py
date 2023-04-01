@@ -19,7 +19,7 @@ def plot_parity(prediction: np.ndarray, true: np.ndarray) -> None:
     plt.plot(true.flatten(), prediction.flatten(), '.', linewidth=1)
     plt.plot([true.min(), true.max()], [true.min(), true.max()], 'k--')
     plt.xlabel('True')
-    plt.xlabel('Prediction')
+    plt.ylabel('Prediction')
     plt.show()
 
 def plot_comparison(prediction: np.ndarray, true: np.ndarray, title: str=None) -> None:
@@ -27,26 +27,28 @@ def plot_comparison(prediction: np.ndarray, true: np.ndarray, title: str=None) -
 
     channels = true.shape[0]
 
-    plt.figure()
+    plt.figure(figsize=(6,6))
+    plt.subplots_adjust(bottom=0.05, top=0.90)
     min_value, max_value = true.min(), true.max()
 
     for i in range(channels):
-
         plt.subplot(channels, 2, i*2+1)
-        axis = plt.imshow(prediction[i, ...], cmap='Spectral_r', vmin=min_value, vmax=max_value)
+        plt.imshow(prediction[i, ...], cmap='Spectral_r', vmin=min_value, vmax=max_value)
         plt.xticks([])
         plt.yticks([])
         if i == 0:
             plt.title('Prediction')
-            plt.colorbar(axis, ticks=[min_value, max_value])
+        colorbar = plt.colorbar(ticks=[min_value, max_value], fraction=0.05, aspect=10)
+        colorbar.ax.tick_params(labelsize=6)
 
         plt.subplot(channels, 2, i*2+2)
-        axis = plt.imshow(true[i, ...], cmap='Spectral_r', vmin=min_value, vmax=max_value)
+        plt.imshow(true[i, ...], cmap='Spectral_r', vmin=min_value, vmax=max_value)
         plt.xticks([])
         plt.yticks([])
         if i == 0:
             plt.title('True')
-            plt.colorbar(axis, ticks=[min_value, max_value])
+        colorbar = plt.colorbar(ticks=[min_value, max_value], fraction=0.05, aspect=10)
+        colorbar.ax.tick_params(labelsize=6)
 
     if title:
         plt.suptitle(title)
