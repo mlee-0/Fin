@@ -11,6 +11,9 @@ def mae(prediction: np.ndarray, true: np.ndarray) -> float:
 def mse(prediction: np.ndarray, true: np.ndarray) -> float:
     return np.mean((prediction - true) ** 2)
 
+def rmse(prediction: np.ndarray, true: np.ndarray) -> float:
+    return np.sqrt(np.mean((prediction - true) ** 2))
+
 def mre(prediction: np.ndarray, true: np.ndarray) -> float:
     return np.mean(np.abs(prediction - true) / true) * 100
 
@@ -20,6 +23,7 @@ def plot_parity(prediction: np.ndarray, true: np.ndarray) -> None:
     plt.plot([true.min(), true.max()], [true.min(), true.max()], 'k--')
     plt.xlabel('True')
     plt.ylabel('Prediction')
+    # plt.subplots_adjust(left=0.05, right=0.975)
     plt.show()
 
 def plot_comparison(prediction: np.ndarray, true: np.ndarray, title: str=None) -> None:
@@ -57,8 +61,4 @@ def plot_comparison(prediction: np.ndarray, true: np.ndarray, title: str=None) -
 
 
 if __name__ == '__main__':
-    from preprocessing import load_pickle
-    outputs = load_pickle('Temperature/outputs.pickle').numpy()
-    print(outputs.shape)
-    i = 300-1
-    plot_comparison(outputs[i], outputs[i])
+    pass

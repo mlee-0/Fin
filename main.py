@@ -40,31 +40,6 @@ def split_dataset(dataset_size: int, splits: List[float]) -> List[int]:
 
     return subset_sizes
 
-# def hyperparameter_grid_search(**kwargs: Tuple[float, float, float]) -> list:
-#     """Return a dictionary of hyperparameter values within the provided bounds and increment.
-    
-#     Provide a keyword argument for each hyperparameter as a range and increment in which to generate evenly spaced values. For example: `batch_size=(2, 128, 2)` results in the values `2, 4, 6, ..., 124, 126, 128`.
-#     """
-
-#     arrays = np.meshgrid(
-#         *[np.arange(minimum, maximum+(increment/2), increment) for minimum, maximum, increment in kwargs.values()]
-#     )
-#     return {
-#         hyperparameter: array.flatten()
-#         for hyperparameter, array in zip(kwargs.keys(), arrays)
-#     }
-
-def hyperparameter_random_search(count: int, **kwargs: Tuple[float, float]) -> Dict[str, np.ndarray]:
-    """Return a dictionary of `count` random hyperparameter values within the provided bounds.
-    
-    Provide a keyword argument for each hyperparameter as a range in which to generate values. For example: `batch_size=(2, 128)` results in random values for `learning_rate` generated between `2` and `128`.
-    """
-
-    return {
-        hyperparameter: np.random.random(count) * (maximum - minimum) + minimum
-        for hyperparameter, (minimum, maximum) in kwargs.items()
-    }
-
 def plot_loss(losses_training: List[float], losses_validation: List[float]) -> None:
     plt.figure()
     plt.semilogy(range(1, len(losses_training)+1), losses_training, '-', label='Training')
@@ -171,6 +146,7 @@ def evaluate_results(outputs: np.ndarray, labels: np.ndarray):
     results = {
         'MAE': mae(outputs, labels),
         'MSE': mse(outputs, labels),
+        'RMSE': rmse(outputs, labels),
         'MRE': mre(outputs, labels),
     }
     for metric, value in results.items():
@@ -308,6 +284,10 @@ def main(
         )
 
         results = evaluate_results(outputs.numpy(), labels.numpy())
+        output_range = dataset.outputs.max() - dataset.outputs.min()
+        print(f"MAE (normalized): {results['MAE'] / output_range}")
+        print(f"MSE (normalized): {results['MSE'] / (output_range)}")
+        print(f"RMSE (normalized): {results['RMSE'] / output_range}")
 
         # Show a parity plot.
         if show_parity:
@@ -324,31 +304,16 @@ def main(
 
 
 if __name__ == '__main__':
-    hyperparameters_from_filename = lambda filename: [float(_) for _ in os.path.basename(filename)[:-4].split('_')[1:]]
+    checkpoint = load_model('Checkpoints/TemperatureNet.pth')
+    weights = checkpoint['model_state_dict']
+    model = ThermalNet(32, 10)
+    model.load_encoder(weights)
+    for name, parameter in model.named_parameters():
+        print(f"{name}, requires_grad {parameter.requires_grad}")
 
-    # hyperparameters = hyperparameter_random_search(
-    #     count=10,
-    #     learning_rate_exponent=(-4, 0),
-    #     batch_size=(1, 128),
-    #     model_size=(2, 80),
-    # )
-
-    # filenames = glob.glob('Checkpoints/rsht_*.pth')
-    # for filename in filenames:
-    #     learning_rate_exponent, batch_size, model_size = hyperparameters_from_filename(filename)
-
-    # for learning_rate_exponent, batch_size, model_size in zip(hyperparameters['learning_rate_exponent'], hyperparameters['batch_size'], hyperparameters['model_size']):
-    #     # filename = f"rsht_lre{learning_rate_exponent}_bs{batch_size}_c{model_size}.pth"
-
-    # for learning_rate_exponent in (-3.5, -3.0, -2.5):
-    #     for batch_size in (1, 8, 16, 64):
-    #         for model_size in (2, 8, 16, 32, 64,):
-    #             filename = f"gsht_lre{learning_rate_exponent}_bs{batch_size}_c{model_size}.pth"
-
-                # print(filename)
-
+    # 1e-3.5 (1-50), 1e-4 (51-100), 1e-5 (101-150)
     main(
-        epoch_count = 10,
+        epoch_count = 20,
         learning_rate = 1e-4,
         batch_sizes = (8, 32, 32),
         dataset_split = (0.8, 0.1, 0.1),
@@ -359,9 +324,9 @@ if __name__ == '__main__':
         save_model_every = 1,
         save_best_separately = True,
 
-        dataset = FinDataset('temperature'),
-        model = ThermalNet(32, 10),
-        filename_model = 'temperature32.pth',
+        dataset = FinDataset('thermal gradient'),
+        model = model,
+        filename_model = 'ThermalGradientNet.pth',
         loss_function = MSELoss(),
         Optimizer = torch.optim.Adam,
         scheduler = None,
@@ -370,6 +335,3 @@ if __name__ == '__main__':
         show_parity = True,
         show_results = True,
     )
-    # checkpoint = load_model('Checkpoints/temperature.pth')
-    # plot_loss(checkpoint['losses_training'], checkpoint['losses_validation'])
-    # print(checkpoint.get('learning_rate', 0))
