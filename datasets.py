@@ -52,7 +52,7 @@ def print_dataset_summary(inputs: torch.Tensor, outputs: torch.Tensor) -> None:
 class FinDataset(Dataset):
     """Dataset of a specific response obtained in FEA."""
 
-    def __init__(self, response: Literal['temperature', 'thermal gradient', 'thermal stress'], normalize_inputs: bool=False) -> None:
+    def __init__(self, response: Literal['temperature', 'thermal gradient', 'thermal stress'], normalize_inputs: bool=False, transforms: Tuple[Callable, Callable]=None) -> None:
         super().__init__()
 
         self.parameters = generate_simulation_parameters()
@@ -69,8 +69,13 @@ class FinDataset(Dataset):
             self.outputs = load_pickle('Thermal 2023-03-23/outputs.pickle')[..., 1].float()
         elif response == 'thermal stress':
             self.outputs = load_pickle('Structural 2023-03-23/outputs.pickle')[..., 0].float()
+            self.outputs /= self.outputs.max()
+            self.outputs *= 78
         else:
             raise Exception(f"Invalid response: '{response}'.")
+
+        if transforms:
+            self.transform, self.inverse_transform = transforms
 
         print_dataset_summary(self.inputs, self.outputs)
 
@@ -98,3 +103,18 @@ class AutoencoderDataset(Dataset):
 
 if __name__ == '__main__':
     dataset = FinDataset('temperature')
+    data_original = dataset.outputs.numpy()
+
+    for x in (1e-10, 1e-5, 1e-4, 1e-3, 1e-2, 1e-1, 1e-0):
+        data = data_original.copy()
+        data -= data.min()
+        data /= data.max()
+        data = np.log(data + x)
+        data -= data.min()
+        data /= data.max()
+        data *= 78
+        
+        plt.hist(data_original.flatten(), bins=100, alpha=0.5, label='Original')
+        plt.hist(data.flatten(), bins=100, alpha=0.5, label=f'{x}')
+        plt.legend()
+        plt.show()

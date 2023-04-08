@@ -196,6 +196,8 @@ def main(
     else:
         checkpoint = {}
 
+    dataset.outputs = dataset.transform(dataset.outputs)
+
     # Split the dataset into training, validation, and testing.
     train_dataset, validate_dataset, test_dataset = random_split(
         dataset,
@@ -276,6 +278,10 @@ def main(
         losses_validation = checkpoint.get('losses_validation', [])
         plot_loss(losses_training, losses_validation)
 
+    # Load the best model.
+    checkpoint = load_model(f"{filepath_model[:-4]}[best]{filepath_model[-4:]}")
+    model.load_state_dict(checkpoint['model_state_dict'])
+
     if test:
         outputs, labels, inputs = test_model(
             model = model,
@@ -283,7 +289,8 @@ def main(
             test_dataloader = test_dataloader,
         )
 
-        results = evaluate_results(outputs.numpy(), labels.numpy())
+        results = evaluate_results(dataset.inverse_transform(outputs.numpy()), dataset.inverse_transform(labels.numpy()))
+        # results = evaluate_results(outputs.numpy(), labels.numpy())
         output_range = dataset.outputs.max() - dataset.outputs.min()
         print(f"MAE (normalized): {results['MAE'] / output_range}")
         print(f"MSE (normalized): {results['MSE'] / (output_range)}")
@@ -304,34 +311,58 @@ def main(
 
 
 if __name__ == '__main__':
-    checkpoint = load_model('Checkpoints/TemperatureNet.pth')
-    weights = checkpoint['model_state_dict']
-    model = ThermalNet(32, 10)
-    model.load_encoder(weights)
-    for name, parameter in model.named_parameters():
-        print(f"{name}, requires_grad {parameter.requires_grad}")
+    # Load pretrained model and copy encoder to new model.
+    # checkpoint = load_model('Checkpoints/TemperatureNet.pth')
+    # weights = checkpoint['model_state_dict']
+    # model = ThermalNet(32, 10)
+    # model.load_encoder(weights)
 
-    # 1e-3.5 (1-50), 1e-4 (51-100), 1e-5 (101-150)
-    main(
-        epoch_count = 20,
-        learning_rate = 1e-4,
-        batch_sizes = (8, 32, 32),
-        dataset_split = (0.8, 0.1, 0.1),
+    dataset = FinDataset('temperature')
 
-        train = True,
-        test = True,
-        train_existing = True,
-        save_model_every = 1,
-        save_best_separately = True,
+    for x in ('1e-10', '1e-5', '1e-4', '1e-3', '1e-2', '1e-1', '1e-0'):
+        filename_model = f"log_{x}.pth"
+        x = float(x)
 
-        dataset = FinDataset('thermal gradient'),
-        model = model,
-        filename_model = 'ThermalGradientNet.pth',
-        loss_function = MSELoss(),
-        Optimizer = torch.optim.Adam,
-        scheduler = None,
+        def transform(data):
+            data = data - dataset.outputs.min().item()
+            data = data / (dataset.outputs.max().item() - dataset.outputs.min().item())
+            data = data + x
+            data = np.log(data)
+            data = data - np.log(x)
+            data = data / (np.log(1 + x) - np.log(x))
+            data = data * 78
+            return data
 
-        show_loss = True,
-        show_parity = True,
-        show_results = True,
-    )
+        def inverse_transform(data):
+            data = data / 78
+            data = data * (np.log(1 + x) - np.log(x))
+            data = data + np.log(x)
+            data = np.exp(data)
+            data = data - x
+            data = data * (dataset.outputs.max().item() - dataset.outputs.min().item())
+            data = data + dataset.outputs.min().item()
+            return data
+
+        main(
+            epoch_count = 10,
+            learning_rate = 10**(-3.5),
+            batch_sizes = (8, 32, 32),
+            dataset_split = (0.8, 0.1, 0.1),
+
+            train = True,
+            test = True,
+            train_existing = not True,
+            save_model_every = 10,
+            save_best_separately = True,
+
+            dataset = FinDataset('temperature', transforms=(transform, inverse_transform)),
+            model = ThermalNet(32, 10),
+            filename_model = filename_model,
+            loss_function = MSELoss(),
+            Optimizer = torch.optim.Adam,
+            scheduler = None,
+
+            show_loss = not True,
+            show_parity = not True,
+            show_results = not True,
+        )

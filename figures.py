@@ -291,7 +291,44 @@ def plot_loss_histories():
 
     plt.show()
 
+def plot_label_transformation_log():
+    """Logarithm label transformation metrics."""
+
+    x = ('1e-10', '1e-5', '1e-4', '1e-3', '1e-2', '1e-1', '1e-0')
+    results = [
+        [1.34812, 11.19305, 3.34560],
+        [0.51847, 2.18231, 1.47726],
+        [0.45072, 1.38373, 1.17632],
+        [0.29617, 0.72960, 0.85417],
+        [0.28363, 0.67760, 0.82317],
+        [0.27384, 0.42481, 0.65177],
+        [0.40119, 0.92861, 0.96365],
+    ]
+    result_baseline = [0.34830, 0.38985, 0.62438]
+    mae, mse, rmse = list(zip(*results))
+
+    plt.figure()
+
+    plt.subplot(1, 3, 1)
+    plt.plot(x, mae, '.-')
+    plt.axhline(result_baseline[0], color=[0.5]*3, label='Baseline')
+    plt.legend()
+    plt.title('MAE')
+
+    plt.subplot(1, 3, 2)
+    plt.plot(x, mse, '.-')
+    plt.axhline(result_baseline[1], color=[0.5]*3, label='Baseline')
+    plt.legend()
+    plt.title('MSE')
+
+    plt.subplot(1, 3, 3)
+    plt.plot(x, rmse, '.-')
+    plt.axhline(result_baseline[2], color=[0.5]*3, label='Baseline')
+    plt.legend()
+    plt.title('RMSE')
+
+    plt.show()
+
+
 if __name__ == '__main__':
-    plot_hyperparameter_tuning_grid_search('vminmse')
-    # for index in [730, 1959, 4076]:
-    #     plot_inputs(index)
+    plot_label_transformation_log()

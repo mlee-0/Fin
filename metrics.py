@@ -23,7 +23,7 @@ def plot_parity(prediction: np.ndarray, true: np.ndarray) -> None:
     plt.plot([true.min(), true.max()], [true.min(), true.max()], 'k--')
     plt.xlabel('True')
     plt.ylabel('Prediction')
-    # plt.subplots_adjust(left=0.05, right=0.975)
+    plt.subplots_adjust(left=0.1, right=0.975)
     plt.show()
 
 def plot_comparison(prediction: np.ndarray, true: np.ndarray, title: str=None) -> None:
@@ -31,8 +31,8 @@ def plot_comparison(prediction: np.ndarray, true: np.ndarray, title: str=None) -
 
     channels = true.shape[0]
 
-    plt.figure(figsize=(6,6))
-    plt.subplots_adjust(bottom=0.05, top=0.90)
+    plt.figure(figsize=(5, 6))
+    plt.subplots_adjust(left=0.05, bottom=0.05, right=0.90, top=0.90)
     min_value, max_value = true.min(), true.max()
 
     for i in range(channels):
