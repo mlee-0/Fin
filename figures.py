@@ -291,6 +291,43 @@ def plot_loss_histories():
 
     plt.show()
 
+def plot_label_transformation_exp():
+    """Exponentiation label transformation metrics."""
+
+    x = ('1.50', '2.00', '2.50', '3.00', '3.50', '4.00')
+    results = [
+        [0.59303, 1.07109, 1.03494],
+        [1.18134, 4.67434, 2.16202],
+        [1.50739, 7.83741, 2.79954],
+        [1.74328, 11.09815, 3.33139],
+        [2.17970, 18.33963, 4.28248],
+        [2.81561, 28.37193, 5.32653],
+    ]
+    result_baseline = [0.34830, 0.38985, 0.62438]
+    mae, mse, rmse = list(zip(*results))
+
+    plt.figure()
+
+    plt.subplot(1, 3, 1)
+    plt.plot(x, mae, '.-')
+    plt.axhline(result_baseline[0], color=[0.5]*3, label='Baseline')
+    plt.legend()
+    plt.title('MAE')
+
+    plt.subplot(1, 3, 2)
+    plt.plot(x, mse, '.-')
+    plt.axhline(result_baseline[1], color=[0.5]*3, label='Baseline')
+    plt.legend()
+    plt.title('MSE')
+
+    plt.subplot(1, 3, 3)
+    plt.plot(x, rmse, '.-')
+    plt.axhline(result_baseline[2], color=[0.5]*3, label='Baseline')
+    plt.legend()
+    plt.title('RMSE')
+
+    plt.show()
+
 def plot_label_transformation_log():
     """Logarithm label transformation metrics."""
 
@@ -331,4 +368,4 @@ def plot_label_transformation_log():
 
 
 if __name__ == '__main__':
-    plot_label_transformation_log()
+    plot_label_transformation_exp()

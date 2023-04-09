@@ -319,29 +319,47 @@ if __name__ == '__main__':
 
     dataset = FinDataset('temperature')
 
-    for x in ('1e-10', '1e-5', '1e-4', '1e-3', '1e-2', '1e-1', '1e-0'):
-        filename_model = f"log_{x}.pth"
+    for x in ('1.50', '2.00', '2.50', '3.00', '3.50', '4.00'):
+        filename_model = f"exp_{x}.pth"
         x = float(x)
 
         def transform(data):
+            """Exponentiation."""
             data = data - dataset.outputs.min().item()
             data = data / (dataset.outputs.max().item() - dataset.outputs.min().item())
-            data = data + x
-            data = np.log(data)
-            data = data - np.log(x)
-            data = data / (np.log(1 + x) - np.log(x))
+            data = data ** x
             data = data * 78
             return data
 
+        # def transform(data):
+        #     """Logarithm."""
+        #     data = data - dataset.outputs.min().item()
+        #     data = data / (dataset.outputs.max().item() - dataset.outputs.min().item())
+        #     data = data + x
+        #     data = np.log(data)
+        #     data = data - np.log(x)
+        #     data = data / (np.log(1 + x) - np.log(x))
+        #     data = data * 78
+        #     return data
+
         def inverse_transform(data):
+            """Exponentiation."""
             data = data / 78
-            data = data * (np.log(1 + x) - np.log(x))
-            data = data + np.log(x)
-            data = np.exp(data)
-            data = data - x
+            data = data ** (1/x)
             data = data * (dataset.outputs.max().item() - dataset.outputs.min().item())
             data = data + dataset.outputs.min().item()
             return data
+
+        # def inverse_transform(data):
+        #     """Logarithm."""
+        #     data = data / 78
+        #     data = data * (np.log(1 + x) - np.log(x))
+        #     data = data + np.log(x)
+        #     data = np.exp(data)
+        #     data = data - x
+        #     data = data * (dataset.outputs.max().item() - dataset.outputs.min().item())
+        #     data = data + dataset.outputs.min().item()
+        #     return data
 
         main(
             epoch_count = 10,
