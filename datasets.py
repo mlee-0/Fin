@@ -105,15 +105,21 @@ if __name__ == '__main__':
     dataset = FinDataset('temperature')
     data_original = dataset.outputs.numpy()
 
-    for x in (1e-10, 1e-5, 1e-4, 1e-3, 1e-2, 1e-1, 1e-0):
+    # for x in (1e-10, 1e-5, 1e-4, 1e-3, 1e-2, 1e-1, 1e-0):
+    #     data = data_original.copy()
+    #     data -= data.min()
+    #     data /= data.max()
+    #     data = np.log(data + x)
+    #     data -= data.min()
+    #     data /= data.max()
+    #     data *= 78
+    for x in ('1.50', '2.00', '2.50', '3.00', '3.50', '4.00'):
+        x = 1/float(x)
         data = data_original.copy()
         data -= data.min()
         data /= data.max()
-        data = np.log(data + x)
-        data -= data.min()
-        data /= data.max()
+        data = data ** x
         data *= 78
-        
         plt.hist(data_original.flatten(), bins=100, alpha=0.5, label='Original')
         plt.hist(data.flatten(), bins=100, alpha=0.5, label=f'{x}')
         plt.legend()

@@ -291,20 +291,65 @@ def plot_loss_histories():
 
     plt.show()
 
-def plot_label_transformation_exp():
+def plot_lt_exp_histograms():
     """Exponentiation label transformation metrics."""
 
-    x = ('1.50', '2.00', '2.50', '3.00', '3.50', '4.00')
+    dataset = FinDataset('temperature')
+    data = dataset.outputs.numpy().flatten()
+    data -= data.min()
+    data /= data.max()
+
+    plt.figure()
+
+    for i, power in enumerate((1.50, 2.00, 2.50, 3.00)):
+        plt.subplot(1, 4, i+1)
+        plt.hist(data, bins=50, color=[0.5]*3, alpha=0.5, label=f'Original')
+        plt.hist(data ** (1 / power), bins=50, alpha=0.5, label=f'1/{power}')
+        plt.xticks([])
+        plt.yticks([])
+        plt.legend()
+    
+    plt.show()
+
+def plot_lt_log_histograms():
+    """Logarithmic label transformation metrics."""
+
+    dataset = FinDataset('temperature')
+    data = dataset.outputs.numpy().flatten()
+    data -= data.min()
+    data /= data.max()
+
+    for i, x1 in enumerate((1e-10, 1e-5, 1e-4, 1e-3, 1e-2, 1e-1, 1e-0)):
+        transformed = data.copy()
+        transformed -= transformed.min()
+        transformed /= transformed.max()
+        transformed += x1
+        transformed = np.log(transformed)
+        transformed -= transformed.min()
+        transformed /= transformed.max()
+        plt.subplot(2, 4, i+1)
+        plt.hist(data, bins=50, color=[0.5]*3, alpha=0.5, label=f'Original')
+        plt.hist(transformed, bins=50, alpha=0.5, label=f'({x1}, 1+{x1})')
+        plt.xticks([])
+        plt.yticks([])
+        plt.legend()
+    
+    plt.show()
+
+def plot_lt_exp_results():
+    """Exponentiation label transformation metrics."""
+
+    x = ('1/1.25', '1/1.50', '1/1.75', '1/2.00', '1/2.50', '1/3.00')
     results = [
-        [0.59303, 1.07109, 1.03494],
-        [1.18134, 4.67434, 2.16202],
-        [1.50739, 7.83741, 2.79954],
-        [1.74328, 11.09815, 3.33139],
-        [2.17970, 18.33963, 4.28248],
-        [2.81561, 28.37193, 5.32653],
+        [0.28119, 0.39734, 0.63035, 1.28269, 2.48790, 1.57731],
+        [0.22451, 0.25370, 0.50369, 1.51836, 3.30359, 1.81758],
+        [0.30688, 0.68685, 0.82876, 2.96126, 17.44611, 4.17685],  #[0.31983, 0.63032, 0.79392, 1.57566, 4.02087, 2.00521],  #[0.37462, 0.79874, 0.89372, 2.18188, 6.15573, 2.48107],
+        [0.23893, 0.33682, 0.58036, 2.13630, 5.85784, 2.42030],
+        [0.24069, 0.47855, 0.69178, 2.37617, 11.91026, 3.45112],
+        [0.40231, 1.29919, 1.13982, 1.43221, 4.04778, 2.01191],
     ]
-    result_baseline = [0.34830, 0.38985, 0.62438]
-    mae, mse, rmse = list(zip(*results))
+    result_baseline = [0.34830, 0.38985, 0.62438, 1.74938, 3.52862, 1.87846]
+    mae, mse, rmse, maxima_mae, maxima_mse, maxima_rmse = list(zip(*results))
 
     plt.figure()
 
@@ -325,24 +370,43 @@ def plot_label_transformation_exp():
     plt.axhline(result_baseline[2], color=[0.5]*3, label='Baseline')
     plt.legend()
     plt.title('RMSE')
+    
+    # plt.subplot(2, 3, 4)
+    # plt.plot(x, maxima_mae, '.-')
+    # plt.axhline(result_baseline[3], color=[0.5]*3, label='Baseline')
+    # plt.legend()
+    # plt.title('Maxima MAE')
 
+    # plt.subplot(2, 3, 5)
+    # plt.plot(x, maxima_mse, '.-')
+    # plt.axhline(result_baseline[4], color=[0.5]*3, label='Baseline')
+    # plt.legend()
+    # plt.title('Maxima MSE')
+
+    # plt.subplot(2, 3, 6)
+    # plt.plot(x, maxima_rmse, '.-')
+    # plt.axhline(result_baseline[5], color=[0.5]*3, label='Baseline')
+    # plt.legend()
+    # plt.title('Maxima RMSE')
+
+    plt.tight_layout()
     plt.show()
 
-def plot_label_transformation_log():
+def plot_lt_log_results():
     """Logarithm label transformation metrics."""
 
     x = ('1e-10', '1e-5', '1e-4', '1e-3', '1e-2', '1e-1', '1e-0')
     results = [
-        [1.34812, 11.19305, 3.34560],
-        [0.51847, 2.18231, 1.47726],
-        [0.45072, 1.38373, 1.17632],
-        [0.29617, 0.72960, 0.85417],
-        [0.28363, 0.67760, 0.82317],
-        [0.27384, 0.42481, 0.65177],
-        [0.40119, 0.92861, 0.96365],
+        [1.34812, 11.19305, 3.34560, 10.41481, 135.02179, 11.61989],
+        [0.51847, 2.18231, 1.47726, 1.49165, 3.48687, 1.86732],
+        [0.45072, 1.38373, 1.17632, 5.44326, 36.89414, 6.07405],
+        [0.29617, 0.72960, 0.85417, 3.03669, 13.53780, 3.67938],
+        [0.28363, 0.67760, 0.82317, 1.29165, 3.05590, 1.74811],
+        [0.27384, 0.42481, 0.65177, 3.66738, 17.27131, 4.15588],
+        [0.40119, 0.92861, 0.96365, 1.66493, 5.44539, 2.33354],
     ]
-    result_baseline = [0.34830, 0.38985, 0.62438]
-    mae, mse, rmse = list(zip(*results))
+    result_baseline = [0.34830, 0.38985, 0.62438, 1.74938, 3.52862, 1.87846]
+    mae, mse, rmse, maxima_mae, maxima_mse, maxima_rmse = list(zip(*results))
 
     plt.figure()
 
@@ -364,8 +428,27 @@ def plot_label_transformation_log():
     plt.legend()
     plt.title('RMSE')
 
+    # plt.subplot(2, 3, 4)
+    # plt.plot(x, maxima_mae, '.-')
+    # plt.axhline(result_baseline[3], color=[0.5]*3, label='Baseline')
+    # plt.legend()
+    # plt.title('Maxima MAE')
+
+    # plt.subplot(2, 3, 5)
+    # plt.plot(x, maxima_mse, '.-')
+    # plt.axhline(result_baseline[4], color=[0.5]*3, label='Baseline')
+    # plt.legend()
+    # plt.title('Maxima MSE')
+
+    # plt.subplot(2, 3, 6)
+    # plt.plot(x, maxima_rmse, '.-')
+    # plt.axhline(result_baseline[5], color=[0.5]*3, label='Baseline')
+    # plt.legend()
+    # plt.title('Maxima RMSE')
+
+    plt.tight_layout()
     plt.show()
 
 
 if __name__ == '__main__':
-    plot_label_transformation_exp()
+    plot_lt_exp_results()

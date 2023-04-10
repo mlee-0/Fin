@@ -143,11 +143,16 @@ def test_model(
 def evaluate_results(outputs: np.ndarray, labels: np.ndarray):
     """Print and return evaluation metrics."""
 
+    maxima = lambda data: data.max(axis=tuple(range(1, data.ndim)), keepdims=True)
+
     results = {
         'MAE': mae(outputs, labels),
         'MSE': mse(outputs, labels),
         'RMSE': rmse(outputs, labels),
         'MRE': mre(outputs, labels),
+        'Maxima MAE': mae(maxima(outputs), maxima(labels)),
+        'Maxima MSE': mse(maxima(outputs), maxima(labels)),
+        'Maxima RMSE': rmse(maxima(outputs), maxima(labels)),
     }
     for metric, value in results.items():
         print(f"{metric}: {value:,.5f}")
@@ -292,9 +297,9 @@ def main(
         results = evaluate_results(dataset.inverse_transform(outputs.numpy()), dataset.inverse_transform(labels.numpy()))
         # results = evaluate_results(outputs.numpy(), labels.numpy())
         output_range = dataset.outputs.max() - dataset.outputs.min()
-        print(f"MAE (normalized): {results['MAE'] / output_range}")
-        print(f"MSE (normalized): {results['MSE'] / (output_range)}")
-        print(f"RMSE (normalized): {results['RMSE'] / output_range}")
+        # print(f"MAE (normalized): {results['MAE'] / output_range}")
+        # print(f"MSE (normalized): {results['MSE'] / (output_range)}")
+        # print(f"RMSE (normalized): {results['RMSE'] / output_range}")
 
         # Show a parity plot.
         if show_parity:
@@ -319,9 +324,9 @@ if __name__ == '__main__':
 
     dataset = FinDataset('temperature')
 
-    for x in ('1.50', '2.00', '2.50', '3.00', '3.50', '4.00'):
-        filename_model = f"exp_{x}.pth"
-        x = float(x)
+    for x in ('1.25', '1.50', '1.75', '2.00', '2.50', '3.00'):
+        filename_model = f"exp_1_{x}.pth"
+        x = 1 / float(x)
 
         def transform(data):
             """Exponentiation."""
@@ -362,7 +367,7 @@ if __name__ == '__main__':
         #     return data
 
         main(
-            epoch_count = 10,
+            epoch_count = 50,
             learning_rate = 10**(-3.5),
             batch_sizes = (8, 32, 32),
             dataset_split = (0.8, 0.1, 0.1),
