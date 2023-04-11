@@ -128,19 +128,3 @@ if __name__ == '__main__':
     outputs = read_simulations_static('Structural 2023-03-23')
     outputs = torch.tensor(outputs, dtype=torch.float32)
     save_pickle(outputs, 'Structural 2023-03-23/outputs.pickle')
-
-    # from metrics import *
-    # outputs = read_simulations_transient('Thermal')
-    # print(outputs.shape)
-    # print(outputs[0].min(), outputs[1].min())
-    # plot_comparison(outputs[0, ..., 0], outputs[1, ..., 0])
-
-    # outputs = read_simulations_static('Structural')
-    # plot_comparison(outputs[300], outputs[308])
-
-    # inputs = make_inputs([[10, 0.2, 20]])
-    # plt.subplot(1, 2, 1)
-    # plt.imshow(inputs[0, 0, ...], cmap='gray', vmin=0, vmax=1)
-    # plt.subplot(1, 2, 2)
-    # plt.imshow(inputs[0, 1, ...], cmap='gray', vmin=0, vmax=1)
-    # plt.show()

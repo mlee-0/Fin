@@ -100,27 +100,44 @@ class AutoencoderDataset(Dataset):
     def __getitem__(self, index) -> Tuple[torch.Tensor, torch.Tensor]:
         return self.inputs[index], self.inputs[index]
 
+# def transform(data):
+#     """Exponentiation."""
+#     data = data - dataset.outputs.min().item()
+#     data = data / (dataset.outputs.max().item() - dataset.outputs.min().item())
+#     data = data ** x
+#     data = data * 78
+#     return data
+
+# # def transform(data):
+# #     """Logarithm."""
+# #     data = data - dataset.outputs.min().item()
+# #     data = data / (dataset.outputs.max().item() - dataset.outputs.min().item())
+# #     data = data + x
+# #     data = np.log(data)
+# #     data = data - np.log(x)
+# #     data = data / (np.log(1 + x) - np.log(x))
+# #     data = data * 78
+# #     return data
+
+# def inverse_transform(data):
+#     """Exponentiation."""
+#     data = data / 78
+#     data = data ** (1/x)
+#     data = data * (dataset.outputs.max().item() - dataset.outputs.min().item())
+#     data = data + dataset.outputs.min().item()
+#     return data
+
+# # def inverse_transform(data):
+# #     """Logarithm."""
+# #     data = data / 78
+# #     data = data * (np.log(1 + x) - np.log(x))
+# #     data = data + np.log(x)
+# #     data = np.exp(data)
+# #     data = data - x
+# #     data = data * (dataset.outputs.max().item() - dataset.outputs.min().item())
+# #     data = data + dataset.outputs.min().item()
+# #     return data
+
 
 if __name__ == '__main__':
     dataset = FinDataset('temperature')
-    data_original = dataset.outputs.numpy()
-
-    # for x in (1e-10, 1e-5, 1e-4, 1e-3, 1e-2, 1e-1, 1e-0):
-    #     data = data_original.copy()
-    #     data -= data.min()
-    #     data /= data.max()
-    #     data = np.log(data + x)
-    #     data -= data.min()
-    #     data /= data.max()
-    #     data *= 78
-    for x in ('1.50', '2.00', '2.50', '3.00', '3.50', '4.00'):
-        x = 1/float(x)
-        data = data_original.copy()
-        data -= data.min()
-        data /= data.max()
-        data = data ** x
-        data *= 78
-        plt.hist(data_original.flatten(), bins=100, alpha=0.5, label='Original')
-        plt.hist(data.flatten(), bins=100, alpha=0.5, label=f'{x}')
-        plt.legend()
-        plt.show()

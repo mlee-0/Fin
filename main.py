@@ -149,7 +149,6 @@ def evaluate_results(outputs: np.ndarray, labels: np.ndarray):
         'MAE': mae(outputs, labels),
         'MSE': mse(outputs, labels),
         'RMSE': rmse(outputs, labels),
-        'MRE': mre(outputs, labels),
         'Maxima MAE': mae(maxima(outputs), maxima(labels)),
         'Maxima MSE': mse(maxima(outputs), maxima(labels)),
         'Maxima RMSE': rmse(maxima(outputs), maxima(labels)),
@@ -201,7 +200,7 @@ def main(
     else:
         checkpoint = {}
 
-    dataset.outputs = dataset.transform(dataset.outputs)
+    # dataset.outputs = dataset.transform(dataset.outputs)
 
     # Split the dataset into training, validation, and testing.
     train_dataset, validate_dataset, test_dataset = random_split(
@@ -294,12 +293,12 @@ def main(
             test_dataloader = test_dataloader,
         )
 
-        results = evaluate_results(dataset.inverse_transform(outputs.numpy()), dataset.inverse_transform(labels.numpy()))
-        # results = evaluate_results(outputs.numpy(), labels.numpy())
+        results = evaluate_results(outputs.numpy(), labels.numpy())
+        # results = evaluate_results(dataset.inverse_transform(outputs.numpy()), dataset.inverse_transform(labels.numpy()))
         output_range = dataset.outputs.max() - dataset.outputs.min()
-        # print(f"MAE (normalized): {results['MAE'] / output_range}")
-        # print(f"MSE (normalized): {results['MSE'] / (output_range)}")
-        # print(f"RMSE (normalized): {results['RMSE'] / output_range}")
+        print(f"MAE (normalized): {results['MAE'] / output_range}")
+        print(f"MSE (normalized): {results['MSE'] / (output_range)}")
+        print(f"RMSE (normalized): {results['RMSE'] / output_range}")
 
         # Show a parity plot.
         if show_parity:
@@ -322,70 +321,26 @@ if __name__ == '__main__':
     # model = ThermalNet(32, 10)
     # model.load_encoder(weights)
 
-    dataset = FinDataset('temperature')
+    main(
+        epoch_count = 10,
+        learning_rate = 10**(-3.5),
+        batch_sizes = (8, 32, 32),
+        dataset_split = (0.8, 0.1, 0.1),
 
-    for x in ('1.25', '1.50', '1.75', '2.00', '2.50', '3.00'):
-        filename_model = f"exp_1_{x}.pth"
-        x = 1 / float(x)
+        train = not True,
+        test = True,
+        train_existing = True,
+        save_model_every = 10,
+        save_best_separately = True,
 
-        def transform(data):
-            """Exponentiation."""
-            data = data - dataset.outputs.min().item()
-            data = data / (dataset.outputs.max().item() - dataset.outputs.min().item())
-            data = data ** x
-            data = data * 78
-            return data
+        dataset = FinDataset('temperature'),
+        model = ThermalNet(32, 10),
+        filename_model = 'TemperatureNet.pth',
+        loss_function = MSELoss(),
+        Optimizer = torch.optim.Adam,
+        scheduler = None,
 
-        # def transform(data):
-        #     """Logarithm."""
-        #     data = data - dataset.outputs.min().item()
-        #     data = data / (dataset.outputs.max().item() - dataset.outputs.min().item())
-        #     data = data + x
-        #     data = np.log(data)
-        #     data = data - np.log(x)
-        #     data = data / (np.log(1 + x) - np.log(x))
-        #     data = data * 78
-        #     return data
-
-        def inverse_transform(data):
-            """Exponentiation."""
-            data = data / 78
-            data = data ** (1/x)
-            data = data * (dataset.outputs.max().item() - dataset.outputs.min().item())
-            data = data + dataset.outputs.min().item()
-            return data
-
-        # def inverse_transform(data):
-        #     """Logarithm."""
-        #     data = data / 78
-        #     data = data * (np.log(1 + x) - np.log(x))
-        #     data = data + np.log(x)
-        #     data = np.exp(data)
-        #     data = data - x
-        #     data = data * (dataset.outputs.max().item() - dataset.outputs.min().item())
-        #     data = data + dataset.outputs.min().item()
-        #     return data
-
-        main(
-            epoch_count = 50,
-            learning_rate = 10**(-3.5),
-            batch_sizes = (8, 32, 32),
-            dataset_split = (0.8, 0.1, 0.1),
-
-            train = True,
-            test = True,
-            train_existing = not True,
-            save_model_every = 10,
-            save_best_separately = True,
-
-            dataset = FinDataset('temperature', transforms=(transform, inverse_transform)),
-            model = ThermalNet(32, 10),
-            filename_model = filename_model,
-            loss_function = MSELoss(),
-            Optimizer = torch.optim.Adam,
-            scheduler = None,
-
-            show_loss = not True,
-            show_parity = not True,
-            show_results = not True,
-        )
+        show_loss = not True,
+        show_parity = not True,
+        show_results = True,
+    )
