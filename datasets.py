@@ -50,7 +50,7 @@ def print_dataset_summary(inputs: torch.Tensor, outputs: torch.Tensor) -> None:
 
 
 class FinDataset(Dataset):
-    """Dataset of a specific response obtained in FEA."""
+    """Load a thermal response dataset obtained in FEA."""
 
     def __init__(self, response: Literal['temperature', 'thermal gradient', 'thermal stress'], normalize_inputs: bool=False, transforms: Tuple[Callable, Callable]=None) -> None:
         super().__init__()
@@ -63,12 +63,12 @@ class FinDataset(Dataset):
             self.inputs /= self.inputs.std()
 
         if response == 'temperature':
-            self.outputs = load_pickle('Thermal 2023-03-23/outputs.pickle')[..., 0].float()
+            self.outputs = load_pickle(os.path.join('Thermal 2023-03-23', 'outputs.pickle'))[..., 0].float()
             self.outputs -= self.outputs.min()
         elif response == 'thermal gradient':
-            self.outputs = load_pickle('Thermal 2023-03-23/outputs.pickle')[..., 1].float()
+            self.outputs = load_pickle(os.path.join('Thermal 2023-03-23', 'outputs.pickle'))[..., 1].float()
         elif response == 'thermal stress':
-            self.outputs = load_pickle('Structural 2023-03-23/outputs.pickle')[..., 0].float()
+            self.outputs = load_pickle(os.path.join('Structural 2023-03-23', 'outputs.pickle'))[..., 0].float()
             self.outputs /= self.outputs.max()
             self.outputs *= 78
         else:
@@ -76,6 +76,7 @@ class FinDataset(Dataset):
 
         if transforms:
             self.transform, self.inverse_transform = transforms
+            self.outputs = self.transform(self.outputs)
 
         print_dataset_summary(self.inputs, self.outputs)
 

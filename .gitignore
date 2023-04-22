@@ -1,7 +1,12 @@
 .DS_Store
 Checkpoints
-Thermal*
-Structural*
+Thermal 2023-03-18
+Structural 2023-03-20
+Thermal 2023-03-20
+Structural 2023-03-21
+Thermal 2023-03-21
+Structural 2023-03-23/*.txt
+Thermal 2023-03-23/*.txt
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

@@ -96,11 +96,6 @@ def validate_model(model: torch.nn.Module, loss_function: torch.nn.Module, valid
             if batch % 10 == 0:
                 print(f"Batch {batch}/{len(validate_dataloader)}...", end='\r')
 
-    # # Calculate evaluation metrics on validation results.
-    # outputs = torch.cat(outputs, dim=0)
-    # labels = torch.cat(labels, dim=0)
-    # evaluate_results(outputs.numpy(), labels.numpy())
-
     return loss / len(validate_dataloader.dataset)
 
 def test_model(
@@ -195,8 +190,6 @@ def main(
     # Load the previously saved checkpoint.
     if (test and not train) or (train and train_existing):
         checkpoint = load_model(filepath_model)
-        # Load the last learning rate used.
-        learning_rate = checkpoint.get('learning_rate', learning_rate)
     else:
         checkpoint = {}
 
@@ -306,7 +299,7 @@ def main(
 
         # Show a comparison plot of the results with labels.
         if show_results:
-            for index in random.sample(range(len(test_dataset)), k=5):
+            for index in random.sample(range(len(test_dataset)), k=3):
                 plot_comparison(
                     outputs[index],
                     labels[index],
@@ -315,14 +308,27 @@ def main(
 
 
 if __name__ == '__main__':
+    # Specify the dataset to use.
+    response: Literal['temperature', 'thermal gradient', 'thermal stress'] = 'temperature'
+
+    if response == 'temperature':
+        model = ThermalNet(32, 10)
+        filename_model = 'TemperatureNet.pth'
+    elif response == 'thermal gradient':
+        model = ThermalNet(32, 10)
+        filename_model = 'ThermalGradientNet.pth'
+    elif response == 'thermal stress':
+        model = ThermalNet(32, 1)
+        filename_model = 'ThermalStressNet.pth'
+
     # Load pretrained model and copy encoder to new model.
-    # checkpoint = load_model('Checkpoints/TemperatureNet.pth')
-    # weights = checkpoint['model_state_dict']
-    # model = ThermalNet(32, 10)
-    # model.load_encoder(weights)
+    if response in ('thermal gradient', 'thermal stress'):
+        checkpoint = load_model(os.path.join('Checkpoints', 'TemperatureNet.pth'))
+        weights = checkpoint['model_state_dict']
+        model.load_encoder(weights)
 
     main(
-        epoch_count = 10,
+        epoch_count = 50,
         learning_rate = 10**(-3.5),
         batch_sizes = (8, 32, 32),
         dataset_split = (0.8, 0.1, 0.1),
@@ -330,17 +336,17 @@ if __name__ == '__main__':
         train = not True,
         test = True,
         train_existing = True,
-        save_model_every = 10,
+        save_model_every = 5,
         save_best_separately = True,
 
-        dataset = FinDataset('temperature'),
-        model = ThermalNet(32, 10),
-        filename_model = 'TemperatureNet.pth',
+        dataset = FinDataset(response),
+        model = model,
+        filename_model = filename_model,
         loss_function = MSELoss(),
         Optimizer = torch.optim.Adam,
         scheduler = None,
 
-        show_loss = not True,
-        show_parity = not True,
+        show_loss = True,
+        show_parity = True,
         show_results = True,
     )

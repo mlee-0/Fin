@@ -104,21 +104,8 @@ def plot_histograms_labels():
 def plot_hyperparameter_tuning_random_search(metric_name: Literal['mae', 'mse']):
     """Random search results."""
 
-    # Model size used range (2, 128)
-    # results = {
-    #     (-1.4553, 97, 32): (1.51032, 11.12079),
-    #     (-1.0541, 125, 94): (1.35541, 3.84921),
-    #     (-1.4995, 6, 8): (0.62557, 1.88772),
-    #     (-2.4096, 28, 81): (0.23364, 0.22754),
-    #     (-3.6493, 94, 71): (0.48215, 2.01489),
-    #     (-4.53, 124, 13): (4.54086, 105.29962),
-    #     (-4.4001, 53, 27): (1.87536, 15.01315),
-    #     (-0.7078, 126, 45): (3.09080, 48.45039),
-    #     (-4.8902, 63, 15): (4.46856, 102.20226),
-    # }
     results = {
         (-0.3412, 119, 78): (3.52896, 54.14465),
-        # (-0.4009, 74, 6): (14.04963, 414.77823),  # Too high
         (-3.2443, 46, 61): (0.83290, 3.42286),
         (-2.5316, 117, 35): (0.71798, 2.92119),
         (-0.4103, 126, 54): (3.09415, 48.63020),
@@ -271,26 +258,6 @@ def plot_hyperparameter_tuning_grid_search(metric_name: Literal['mae', 'mse', 'v
 
     plt.show()
 
-def plot_loss_histories():
-    """Loss histories of models shown in subplots."""
-
-    plt.subplot(1, 3, 1)
-    plt.plot(range(1, len(losses_training)+1), losses_training, '.-', label='Training')
-    plt.plot(range(1, len(losses_validation)+1), losses_validation, '.-', label='Validation')
-    plt.title('Temperature')
-
-    plt.subplot(1, 3, 2)
-    plt.plot(range(1, len(losses_training)+1), losses_training, '.-', label='Training')
-    plt.plot(range(1, len(losses_validation)+1), losses_validation, '.-', label='Validation')
-    plt.title('Thermal Gradient')
-
-    plt.subplot(1, 3, 3)
-    plt.plot(range(1, len(losses_training)+1), losses_training, '.-', label='Training')
-    plt.plot(range(1, len(losses_validation)+1), losses_validation, '.-', label='Validation')
-    plt.title('Thermal Stress')
-
-    plt.show()
-
 def plot_lt_exp_histograms():
     """Exponentiation label transformation metrics."""
 
@@ -343,7 +310,7 @@ def plot_lt_exp_results():
     results = [
         [0.28119, 0.39734, 0.63035, 1.28269, 2.48790, 1.57731],
         [0.22451, 0.25370, 0.50369, 1.51836, 3.30359, 1.81758],
-        [0.30688, 0.68685, 0.82876, 2.96126, 17.44611, 4.17685],  #[0.31983, 0.63032, 0.79392, 1.57566, 4.02087, 2.00521],  #[0.37462, 0.79874, 0.89372, 2.18188, 6.15573, 2.48107],
+        [0.30688, 0.68685, 0.82876, 2.96126, 17.44611, 4.17685],
         [0.23893, 0.33682, 0.58036, 2.13630, 5.85784, 2.42030],
         [0.24069, 0.47855, 0.69178, 2.37617, 11.91026, 3.45112],
         [0.40231, 1.29919, 1.13982, 1.43221, 4.04778, 2.01191],
@@ -451,4 +418,4 @@ def plot_lt_log_results():
 
 
 if __name__ == '__main__':
-    plot_lt_exp_results()
+    pass
