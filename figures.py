@@ -1,3 +1,6 @@
+"""Miscellaneous plots of data and results."""
+
+
 from matplotlib import cm
 import matplotlib.pyplot as plt
 import random
@@ -14,24 +17,30 @@ def plot_inputs(index: int=None):
     parameters = generate_simulation_parameters()[index]
     array = make_inputs([parameters])
 
+    plt.figure(figsize=(4, 5))
+
     plt.subplot(3, 1, 1)
     plt.imshow(array[0, 0, ...], cmap='gray', vmin=0, vmax=1)
+    plt.colorbar(ticks=[0, 1])
     plt.title(f'Thickness = {parameters[0]} mm, Taper Ratio = {parameters[1]}')
     plt.xticks([])
     plt.yticks([])
 
     plt.subplot(3, 1, 2)
     plt.imshow(array[0, 1, ...], cmap='gray', vmin=0, vmax=1)
+    plt.colorbar(ticks=[0, 1])
     plt.title(fr'Convection Coefficient = {parameters[2]} W/m$^2$K')
     plt.xticks([])
     plt.yticks([])
     
     plt.subplot(3, 1, 3)
     plt.imshow(array[0, 2, ...], cmap='gray', vmin=0, vmax=1)
+    plt.colorbar(ticks=[0, 1])
     plt.title(f'Temperature Boundary Condition = {parameters[3]} K')
     plt.xticks([])
     plt.yticks([])
 
+    plt.tight_layout()
     plt.show()
 
 def plot_labels():
@@ -306,55 +315,40 @@ def plot_lt_log_histograms():
 def plot_lt_exp_results():
     """Exponentiation label transformation metrics."""
 
-    x = ('1/1.25', '1/1.50', '1/1.75', '1/2.00', '1/2.50', '1/3.00')
+    x = ('1/3.00', '1/2.50', '1/2.00', '1/1.75', '1/1.50', '1/1.25')
     results = [
-        [0.28119, 0.39734, 0.63035, 1.28269, 2.48790, 1.57731],
-        [0.22451, 0.25370, 0.50369, 1.51836, 3.30359, 1.81758],
-        [0.30688, 0.68685, 0.82876, 2.96126, 17.44611, 4.17685],
-        [0.23893, 0.33682, 0.58036, 2.13630, 5.85784, 2.42030],
-        [0.24069, 0.47855, 0.69178, 2.37617, 11.91026, 3.45112],
         [0.40231, 1.29919, 1.13982, 1.43221, 4.04778, 2.01191],
+        [0.24069, 0.47855, 0.69178, 2.37617, 11.91026, 3.45112],
+        [0.23893, 0.33682, 0.58036, 2.13630, 5.85784, 2.42030],
+        [0.30688, 0.68685, 0.82876, 2.96126, 17.44611, 4.17685],
+        [0.22451, 0.25370, 0.50369, 1.51836, 3.30359, 1.81758],
+        [0.28119, 0.39734, 0.63035, 1.28269, 2.48790, 1.57731],
     ]
     result_baseline = [0.34830, 0.38985, 0.62438, 1.74938, 3.52862, 1.87846]
     mae, mse, rmse, maxima_mae, maxima_mse, maxima_rmse = list(zip(*results))
 
-    plt.figure()
+    plt.figure(figsize=(8, 3))
 
     plt.subplot(1, 3, 1)
-    plt.plot(x, mae, '.-')
-    plt.axhline(result_baseline[0], color=[0.5]*3, label='Baseline')
+    plt.plot(mae, '.-')
+    plt.axhline(result_baseline[0], linestyle='--', color=[0.0]*3, label='Baseline')
+    plt.xticks(ticks=range(len(mae)), labels=x, rotation=90)
     plt.legend()
     plt.title('MAE')
 
     plt.subplot(1, 3, 2)
-    plt.plot(x, mse, '.-')
-    plt.axhline(result_baseline[1], color=[0.5]*3, label='Baseline')
+    plt.plot(mse, '.-')
+    plt.axhline(result_baseline[1], linestyle='--', color=[0.0]*3, label='Baseline')
+    plt.xticks(ticks=range(len(mse)), labels=x, rotation=90)
     plt.legend()
     plt.title('MSE')
 
     plt.subplot(1, 3, 3)
-    plt.plot(x, rmse, '.-')
-    plt.axhline(result_baseline[2], color=[0.5]*3, label='Baseline')
+    plt.plot(rmse, '.-')
+    plt.axhline(result_baseline[2], linestyle='--', color=[0.0]*3, label='Baseline')
+    plt.xticks(ticks=range(len(rmse)), labels=x, rotation=90)
     plt.legend()
     plt.title('RMSE')
-    
-    # plt.subplot(2, 3, 4)
-    # plt.plot(x, maxima_mae, '.-')
-    # plt.axhline(result_baseline[3], color=[0.5]*3, label='Baseline')
-    # plt.legend()
-    # plt.title('Maxima MAE')
-
-    # plt.subplot(2, 3, 5)
-    # plt.plot(x, maxima_mse, '.-')
-    # plt.axhline(result_baseline[4], color=[0.5]*3, label='Baseline')
-    # plt.legend()
-    # plt.title('Maxima MSE')
-
-    # plt.subplot(2, 3, 6)
-    # plt.plot(x, maxima_rmse, '.-')
-    # plt.axhline(result_baseline[5], color=[0.5]*3, label='Baseline')
-    # plt.legend()
-    # plt.title('Maxima RMSE')
 
     plt.tight_layout()
     plt.show()
@@ -375,43 +369,28 @@ def plot_lt_log_results():
     result_baseline = [0.34830, 0.38985, 0.62438, 1.74938, 3.52862, 1.87846]
     mae, mse, rmse, maxima_mae, maxima_mse, maxima_rmse = list(zip(*results))
 
-    plt.figure()
+    plt.figure(figsize=(7, 3))
 
     plt.subplot(1, 3, 1)
-    plt.plot(x, mae, '.-')
-    plt.axhline(result_baseline[0], color=[0.5]*3, label='Baseline')
+    plt.plot(mae, '.-')
+    plt.axhline(result_baseline[0], linestyle='--', color=[0.0]*3, label='Baseline')
+    plt.xticks(ticks=range(len(mae)), labels=x, rotation=90)
     plt.legend()
     plt.title('MAE')
 
     plt.subplot(1, 3, 2)
-    plt.plot(x, mse, '.-')
-    plt.axhline(result_baseline[1], color=[0.5]*3, label='Baseline')
+    plt.plot(mse, '.-')
+    plt.axhline(result_baseline[1], linestyle='--', color=[0.0]*3, label='Baseline')
+    plt.xticks(ticks=range(len(mse)), labels=x, rotation=90)
     plt.legend()
     plt.title('MSE')
 
     plt.subplot(1, 3, 3)
-    plt.plot(x, rmse, '.-')
-    plt.axhline(result_baseline[2], color=[0.5]*3, label='Baseline')
+    plt.plot(rmse, '.-')
+    plt.axhline(result_baseline[2], linestyle='--', color=[0.0]*3, label='Baseline')
+    plt.xticks(ticks=range(len(rmse)), labels=x, rotation=90)
     plt.legend()
     plt.title('RMSE')
-
-    # plt.subplot(2, 3, 4)
-    # plt.plot(x, maxima_mae, '.-')
-    # plt.axhline(result_baseline[3], color=[0.5]*3, label='Baseline')
-    # plt.legend()
-    # plt.title('Maxima MAE')
-
-    # plt.subplot(2, 3, 5)
-    # plt.plot(x, maxima_mse, '.-')
-    # plt.axhline(result_baseline[4], color=[0.5]*3, label='Baseline')
-    # plt.legend()
-    # plt.title('Maxima MSE')
-
-    # plt.subplot(2, 3, 6)
-    # plt.plot(x, maxima_rmse, '.-')
-    # plt.axhline(result_baseline[5], color=[0.5]*3, label='Baseline')
-    # plt.legend()
-    # plt.title('Maxima RMSE')
 
     plt.tight_layout()
     plt.show()

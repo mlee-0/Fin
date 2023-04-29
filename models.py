@@ -126,5 +126,4 @@ class ThermalNet(Module):
 
         for name, parameter in self.named_parameters():
             if not any(name.startswith(_) for _ in decoder_layer_prefixes):
-                # self.get_parameter(name) = Parameter(weights[name], requires_grad=False)
                 parameter.requires_grad = False

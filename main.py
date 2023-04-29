@@ -157,9 +157,10 @@ def main(
     epoch_count: int, learning_rate: float, batch_sizes: Tuple[int, int, int], dataset_split: Tuple[float, float, float],
     train: bool, test: bool, train_existing: bool, save_model_every: int, save_best_separately: bool,
     dataset: Dataset, model: torch.nn.Module, filename_model: str, loss_function: torch.nn.Module, Optimizer: torch.optim.Optimizer, scheduler=None,
-    show_loss: bool=True, show_parity: bool=True, show_results: bool=True,
+    show_loss: bool=True, show_parity: bool=True, show_predictions: bool=True,
 ) -> None:
-    """
+    """Train and test the model.
+
     Inputs:
     `epoch_count`: Number of epochs to train.
     `learning_rate`: Learning rate for the optimizer.
@@ -180,9 +181,9 @@ def main(
     `Optimizer`: An Optimizer subclass to instantiate, not an instance of the class.
     `scheduler`: A learning rate scheduler.
 
-    `show_loss`: Show a loss history plot.
-    `show_parity`: Show a parity plot after testing.
-    `show_results`: Show the results after testing.
+    `show_loss`: Plot the loss history.
+    `show_parity`: Plot model predictions vs. labels after testing.
+    `show_predictions`: Show randomly selected model predictions with corresponding labels after testing.
     """
 
     filepath_model = os.path.join(FOLDER_CHECKPOINTS, filename_model)
@@ -192,8 +193,6 @@ def main(
         checkpoint = load_model(filepath_model)
     else:
         checkpoint = {}
-
-    # dataset.outputs = dataset.transform(dataset.outputs)
 
     # Split the dataset into training, validation, and testing.
     train_dataset, validate_dataset, test_dataset = random_split(
@@ -286,8 +285,13 @@ def main(
             test_dataloader = test_dataloader,
         )
 
-        results = evaluate_results(outputs.numpy(), labels.numpy())
-        # results = evaluate_results(dataset.inverse_transform(outputs.numpy()), dataset.inverse_transform(labels.numpy()))
+        # Transform values back to original range.
+        outputs = dataset.untransform(outputs)
+        labels = dataset.untransform(labels)
+
+        outputs, labels, inputs = outputs.numpy(), labels.numpy(), inputs.numpy()
+
+        results = evaluate_results(outputs, labels)
         output_range = dataset.outputs.max() - dataset.outputs.min()
         print(f"MAE (normalized): {results['MAE'] / output_range}")
         print(f"MSE (normalized): {results['MSE'] / (output_range)}")
@@ -298,7 +302,7 @@ def main(
             plot_parity(outputs, labels)
 
         # Show a comparison plot of the results with labels.
-        if show_results:
+        if show_predictions:
             for index in random.sample(range(len(test_dataset)), k=3):
                 plot_comparison(
                     outputs[index],
@@ -308,9 +312,17 @@ def main(
 
 
 if __name__ == '__main__':
-    # Specify the dataset to use.
+    # Specify the dataset to use as one of three possible strings (case-sensitive).
     response: Literal['temperature', 'thermal gradient', 'thermal stress'] = 'temperature'
 
+    # Load the dataset.
+    dataset = FinDataset(
+        response = response,
+        transformation_exponentiation = None,
+        transformation_logarithmic = None,
+    )
+
+    # Initialize the model.
     if response == 'temperature':
         model = ThermalNet(32, 10)
         filename_model = 'TemperatureNet.pth'
@@ -321,7 +333,7 @@ if __name__ == '__main__':
         model = ThermalNet(32, 1)
         filename_model = 'ThermalStressNet.pth'
 
-    # Load pretrained model and copy encoder to new model.
+    # Load pretrained model trained on temperature dataset and copy its encoder weights to current model, if applicable.
     if response in ('thermal gradient', 'thermal stress'):
         checkpoint = load_model(os.path.join('Checkpoints', 'TemperatureNet.pth'))
         weights = checkpoint['model_state_dict']
@@ -333,13 +345,13 @@ if __name__ == '__main__':
         batch_sizes = (8, 32, 32),
         dataset_split = (0.8, 0.1, 0.1),
 
+        train_existing = True,
         train = not True,
         test = True,
-        train_existing = True,
         save_model_every = 5,
         save_best_separately = True,
 
-        dataset = FinDataset(response),
+        dataset = dataset,
         model = model,
         filename_model = filename_model,
         loss_function = MSELoss(),
@@ -348,5 +360,5 @@ if __name__ == '__main__':
 
         show_loss = True,
         show_parity = True,
-        show_results = True,
+        show_predictions = True,
     )

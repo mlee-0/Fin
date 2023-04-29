@@ -37,7 +37,7 @@ duration = 100
 steps = 10
 
 
-! Start the for loop.
+! For loop over each simulation parameter, with parameters defined as: start, end, increment.
 *DO, thickness, 5, 10, 1
 *DO, taper_ratio, 0.1, 1.0, 0.1
 *DO, convection_coefficient, 10, 100, 10
